@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project 
+    xmlns="http://maven.apache.org/POM/4.0.0"
+         
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>throwallmoveall</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>ThrowAll &amp; MoveAll Mod</name>
+    <description>Minecraft 1.20.4 client mod providing ThrowAll and MoveAll inventory shortcuts.</description>
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <minecraft.version>1.20.4</minecraft.version>
+        <fabric.loader.version>0.15.7</fabric.loader.version>
+        <fabric.api.version>0.97.0+1.20.4</fabric.api.version>
+    </properties>
+    <repositories>
+        <repository>
+            <id>fabric-maven</id>
+            <name>Fabric Repository</name>
+            <url>https://maven.fabricmc.net/</url>
+        </repository>
+        <repository>
+            <id>mojang</id>
+            <name>Mojang Repository</name>
+            <url>https://libraries.minecraft.net/</url>
+        </repository>
+    </repositories>
+    <dependencies>
+        <!-- Fabric Loader -->
+        <dependency>
+            <groupId>net.fabricmc</groupId>
+            <artifactId>fabric-loader</artifactId>
+            <version>${fabric.loader.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Fabric API -->
+        <dependency>
+            <groupId>net.fabricmc.fabric-api</groupId>
+            <artifactId>fabric-api</artifactId>
+            <version>${fabric.api.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.fabricmc.fabric-api</groupId>
+                    <artifactId>fabric-api-deprecated</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- Compiler Plugin: Bỏ qua Maven Compile vì Gradle Loom sẽ đảm nhận biên dịch & remapping Minecraft -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <skipMain>true</skipMain>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <!-- Resources Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <!-- Jar Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <skipIfEmpty>true</skipIfEmpty>
+                </configuration>
+            </plugin>
+            <!-- Exec Plugin: Tự động kích hoạt Gradle build khi chạy Maven package -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>gradle-build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${gradle.executable}</executable>
+                            <commandlineArgs>${gradle.args}</commandlineArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>cmd</gradle.executable>
+                <gradle.args>/c "if exist gradlew.bat (gradlew.bat build) else (gradle build)"</gradle.args>
+            </properties>
+        </profile>
+        <profile>
+            <id>unix</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>sh</gradle.executable>
+                <gradle.args>-c "[ -f ./gradlew ] &amp;&amp; ./gradlew build || gradle build"</gradle.args>
+            </properties>
+        </profile>
+    </profiles>
+</project>

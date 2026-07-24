@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "throwallmoveall",
+  "version": "1.0.0",
+  "name": "ThrowAll & MoveAll Mod",
+  "description": "Mod phím tắt tiện ích cho Minecraft 1.20.4 giúp vứt toàn bộ vật phẩm (ThrowAll) và chuyển nhanh toàn bộ vật phẩm (MoveAll).",
+  "authors": [
+    "Developer"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/throwallmoveall/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.throwallmoveall.ThrowAllMoveAllMod"
+    ]
+  },
+  "mixins": [
+    "throwallmoveall.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20.4",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

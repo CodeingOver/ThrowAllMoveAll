@@ -1,0 +1,7 @@
+/.agents
+/.gradle
+/.vscode
+/bin
+/build
+/build.gradle
+/target
