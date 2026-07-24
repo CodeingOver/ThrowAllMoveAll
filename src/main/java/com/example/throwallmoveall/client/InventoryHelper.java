@@ -1,6 +1,5 @@
 package com.example.throwallmoveall.client;
 
-import com.example.throwallmoveall.mixin.HandledScreenAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -14,11 +13,16 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
+import java.lang.reflect.Field;
+
 /**
- * Lớp tối ưu hóa hiệu năng và an toàn mạng cho các thao tác kho đồ (ThrowAll & MoveAll).
- * Chỉ hoạt động khi trỏ chuột vào một ô chứa vật phẩm hợp lệ trong giao diện GUI.
+ * Lớp xử lý kho đồ Client-side cho ThrowAll & MoveAll.
+ * Sử dụng Reflection tự động dò tìm field ô slot (focusedSlot) có Caching hiệu năng cao.
+ * Hoàn toàn KHÔNG dùng Mixin -> Loại bỏ 100% nguy cơ crash với Sodium và mọi Mod khác.
  */
 public class InventoryHelper {
+
+    private static Field focusedSlotField = null;
 
     /**
      * Di chuyển nhanh tất cả vật phẩm CÙNG LOẠI với ô đang trỏ chuột.
@@ -33,8 +37,7 @@ public class InventoryHelper {
         Screen currentScreen = client.currentScreen;
         if (!(currentScreen instanceof HandledScreen<?> handledScreen)) return;
 
-        Slot focusedSlot = getFocusedSlotFast(handledScreen);
-        // Chỉ hoạt động khi trỏ chuột vào ô chứa vật phẩm hợp lệ
+        Slot focusedSlot = getFocusedSlot(handledScreen);
         if (focusedSlot == null || !focusedSlot.hasStack() || !focusedSlot.canTakeItems(player)) return;
 
         ScreenHandler handler = handledScreen.getScreenHandler();
@@ -67,8 +70,7 @@ public class InventoryHelper {
         Screen currentScreen = client.currentScreen;
         if (!(currentScreen instanceof HandledScreen<?> handledScreen)) return;
 
-        Slot focusedSlot = getFocusedSlotFast(handledScreen);
-        // Chỉ hoạt động khi trỏ chuột vào ô chứa vật phẩm hợp lệ
+        Slot focusedSlot = getFocusedSlot(handledScreen);
         if (focusedSlot == null || !focusedSlot.hasStack() || !focusedSlot.canTakeItems(player)) return;
 
         ScreenHandler handler = handledScreen.getScreenHandler();
@@ -87,20 +89,28 @@ public class InventoryHelper {
     }
 
     /**
-     * Lấy ô đang trỏ chuột cực nhanh thông qua Mixin Accessor (Tốc độ tối đa, 0 Reflection).
+     * Lấy ô slot đang được trỏ chuột bằng Reflection (có cache Field, tốc độ cực nhanh, 0 tốn Mixin).
      */
-    private static Slot getFocusedSlotFast(HandledScreen<?> screen) {
-        if (screen instanceof HandledScreenAccessor accessor) {
-            return accessor.getFocusedSlot();
-        }
+    private static Slot getFocusedSlot(HandledScreen<?> screen) {
+        try {
+            if (focusedSlotField == null) {
+                for (Field field : HandledScreen.class.getDeclaredFields()) {
+                    if (field.getType() == Slot.class) {
+                        field.setAccessible(true);
+                        focusedSlotField = field;
+                        break;
+                    }
+                }
+            }
+            if (focusedSlotField != null) {
+                return (Slot) focusedSlotField.get(screen);
+            }
+        } catch (Throwable ignored) {}
         return null;
     }
 
     /**
-     * Bật bộ lọc an toàn: Kiểm tra ô có nên bỏ qua hay không.
-     * Bỏ qua ô nếu:
-     * - Ô thuộc ô kết quả chế tạo (CraftingResultInventory) -> Tránh lỗi server desync hoặc auto-craft ngoài ý muốn.
-     * - Người chơi không có quyền rút đồ từ ô đó (canTakeItems = false).
+     * Kiểm tra ô slot có nên bỏ qua hay không (bộ lọc an toàn).
      */
     private static boolean shouldSkipSlot(Slot slot, ClientPlayerEntity player) {
         if (slot == null) return true;

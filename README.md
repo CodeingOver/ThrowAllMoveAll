@@ -1,6 +1,6 @@
 # ThrowAll & MoveAll Mod (Minecraft 1.20.4)
 
-Một Client-side Mod dành cho Minecraft 1.20.4 được phát triển theo chuẩn Maven POM (`pom.xml`), trích xuất 2 tính năng chuyển đổi & vứt vật phẩm tiện lợi nhất từ Item Scroller: **ThrowAll** và **MoveAll**.
+Một Client-side Mod dành cho Minecraft 1.20.4 được phát triển theo chuẩn Maven POM (`pom.xml`), trích xuất 2 tính năng chuyển đổi & vứt vật phẩm tiện lợi nhất từ Item Scroller: **ThrowAll** và **MoveAll**. Hỗ trợ tệp cấu hình JSON ngoài độc lập và phím tắt tổ hợp Combo phức tạp (`Alt + Q`, `Ctrl + Shift + V`...).
 
 ---
 
@@ -12,11 +12,16 @@ Một Client-side Mod dành cho Minecraft 1.20.4 được phát triển theo chu
 ---
 
 ## 2. Tính năng chính
+- **Cấu hình độc lập ngoài (`.minecraft/config/throwallmoveall.json`):**
+  - Tự động tạo và lưu trữ tệp cấu hình JSON ngoài. Không phụ thuộc vào menu Controls mặc định.
+- **Hỗ trợ phím tắt tổ hợp Combo:**
+  - Cho phép gán các phím tổ hợp dạng `Alt + Key` (VD: `Alt + Q`), `Ctrl + Key`, `Shift + Key` hoặc kết hợp đồng thời (`Ctrl + Shift + V`).
+- **Giao diện Cài đặt In-Game (ModMenu GUI):**
+  - Tích hợp nút **Configure** trong danh sách Mod Menu của game, cho phép đổi nút bấm trực quan.
 - **ThrowAll (Thả toàn bộ vật phẩm cùng loại):**
-  - Khi trỏ chuột vào một ô vật phẩm trong kho đồ/rương (GUI) và nhấn phím tắt, toàn bộ vật phẩm cùng loại ở mọi ô sẽ lập tức được vứt ra ngoài.
-  - Chỉ hoạt động khi đang mở giao diện GUI kho đồ/rương và trỏ chuột vào ô chứa vật phẩm.
+  - Khi trỏ chuột vào một ô vật phẩm trong kho đồ/rương (GUI) và nhấn phím tắt tổ hợp, toàn bộ vật phẩm cùng loại ở mọi ô sẽ lập tức được vứt ra ngoài.
 - **MoveAll (Di chuyển toàn bộ vật phẩm cùng loại):**
-  - Tự động di chuyển tất cả các stack vật phẩm cùng loại từ rương/container sang kho cá nhân của người chơi (hoặc ngược lại) chỉ với 1 thao tác nhấn phím khi đang mở giao diện GUI và trỏ chuột vào ô chứa vật phẩm.
+  - Tự động di chuyển tất cả các stack vật phẩm cùng loại từ rương/container sang kho cá nhân của người chơi (hoặc ngược lại) chỉ với 1 thao tác nhấn phím tổ hợp khi đang mở giao diện GUI.
 
 ---
 
@@ -43,7 +48,7 @@ Một Client-side Mod dành cho Minecraft 1.20.4 được phát triển theo chu
      ./gradlew build
      ```
 3. **Cài đặt vào Minecraft:**
-   - Copy file `.jar` vừa biên dịch trong thư mục `target/` (hoặc `build/libs/`) vào thư mục `.minecraft/mods/`.
+   - Copy file `throwallmoveall-1.1.0.jar` vừa biên dịch trong thư mục `target/` (hoặc `build/libs/`) vào thư mục `.minecraft/mods/`.
 
 ---
 
@@ -63,6 +68,19 @@ Dự án này không yêu cầu biến môi trường hệ thống đặc biệt
    ```bash
    ./gradlew runClient
    ```
-2. **Phím tắt mặc định trong game:**
-   - **Vứt toàn bộ vật phẩm (ThrowAll):** Phím `V` (Có thể tùy chỉnh trong menu Controls -> Key Binds).
-   - **Di chuyển toàn bộ vật phẩm (MoveAll):** Phím `X` (Có thể tùy chỉnh trong menu Controls -> Key Binds).
+2. **Tùy chỉnh tệp cấu hình JSON ngoài:**
+   - Mở tệp `.minecraft/config/throwallmoveall.json`:
+     ```json
+     {
+       "throwAllKey": 81,
+       "throwAllAlt": true,
+       "throwAllCtrl": false,
+       "throwAllShift": false,
+       "moveAllKey": 88,
+       "moveAllAlt": false,
+       "moveAllCtrl": true,
+       "moveAllShift": true
+     }
+     ```
+3. **Tùy chỉnh qua giao diện In-Game Mod Menu:**
+   - Mở **Mod Menu** -> Tìm **ThrowAll & MoveAll Mod** -> Bấm **Configure** để chỉnh trực quan phím tắt & các cờ Alt/Ctrl/Shift.

@@ -5,7 +5,7 @@ Tài liệu này mô tả chi tiết thiết kế kiến trúc, cấu trúc thà
 ---
 
 ## 1. Tổng quan hệ thống (System Overview)
-Mod được thiết kế là một **Client-side Mod** dành cho Fabric Loader trên Minecraft 1.20.4. Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng và tối ưu hiệu năng.
+Mod được thiết kế là một **Client-side Mod** dành cho Fabric Loader trên Minecraft 1.20.4. Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
 
 ---
 
@@ -15,6 +15,8 @@ Mod được thiết kế là một **Client-side Mod** dành cho Fabric Loader 
 - **Modding Framework:** Fabric Loader (`0.15.7`), Fabric API (`0.97.0+1.20.4`).
 - **Mapping:** Yarn Mappings cho Minecraft 1.20.4.
 - **Thư viện đồ họa & Input:** Lightweight Java Game Library (LWJGL3 / GLFW).
+- **Cấu hình & Dữ liệu:** Google Gson (Tệp cấu hình JSON).
+- **Tích hợp:** Mod Menu API (`9.0.0`).
 
 ---
 
@@ -36,48 +38,52 @@ d:/CodeJava/ModMinecraft/ThowAllMoveAll/
         │       └── example/
         │           └── throwallmoveall/
         │               ├── ThrowAllMoveAllMod.java    # Client Mod EntryPoint
-        │               ├── mixin/
-        │               │   └── HandledScreenAccessor.java # Mixin Accessor tối ưu hiệu năng lấy Slot
+        │               ├── config/
+        │               │   └── ModConfig.java         # Quản lý đọc/ghi config.json ngoài
         │               └── client/
-        │                   ├── KeyBindings.java       # Quản lý & Đăng ký Hotkeys
-        │                   └── InventoryHelper.java   # Logic tương tác kho đồ Client
+        │                   ├── ComboKeyHandler.java   # Xử lý bắt phím tổ hợp Combo (Alt/Ctrl/Shift)
+        │                   ├── ModConfigScreen.java   # Giao diện cài đặt GUI In-Game
+        │                   ├── ModMenuIntegration.java# Tích hợp nút Configure vào Mod Menu
+        │                   └── InventoryHelper.java   # Logic tương tác kho đồ Client (Reflection Caching)
         └── resources/
             ├── fabric.mod.json              # Metadata cho Fabric Mod Loader
-            └── throwallmoveall.mixins.json  # Cấu hình Fabric Mixins
+            └── assets/
+                └── throwallmoveall/
+                    └── lang/                # Tệp dịch ngôn ngữ (en_us.json, vi_vn.json)
 ```
 
 ---
 
 ## 4. Kiến trúc thành phần (Component Architecture)
-- **Client EntryPoint Layer (`ThrowAllMoveAllMod`):** Khởi tạo mod khi game nạp client, đăng ký phím tắt và bắt sự kiện tick người chơi (`ClientTickEvents`).
-- **KeyBinding Registry Layer (`KeyBindings`):** Khai báo và lưu trữ 2 phím tắt chính (`ThrowAll` phím `V`, `MoveAll` phím `X`) trong kho keybinds của Minecraft.
-- **Mixin Accessor Layer (`HandledScreenAccessor`):** Giao diện Mixin giúp đọc thuộc tính `focusedSlot` trên GUI màn hình với hiệu năng tối đa (không sử dụng Reflection).
-- **Inventory Handler Layer (`InventoryHelper`):** Thành phần xử lý chính thực hiện truy vấn giao diện GUI màn hình (`HandledScreen`), áp dụng bộ lọc an toàn và phát lệnh click slot qua `ClientPlayerInteractionManager`.
+- **Client EntryPoint Layer (`ThrowAllMoveAllMod`):** Khởi tạo tệp cấu hình JSON ngoài và đăng ký sự kiện `ClientTickEvents.END_CLIENT_TICK`.
+- **Config Management Layer (`ModConfig`):** Đọc/ghi cài đặt phím tắt tổ hợp Combo tại `.minecraft/config/throwallmoveall.json`.
+- **Combo Key Handler Layer (`ComboKeyHandler`):** Đọc trạng thái GLFW phím chính và các phím Modifier (`Alt`, `Ctrl`, `Shift`) ở mức thấp.
+- **Config GUI Layer (`ModConfigScreen` & `ModMenuIntegration`):** Cung cấp giao diện bấm nút tùy chỉnh phím tắt In-Game và tích hợp Mod Menu API.
+- **Inventory Handler Layer (`InventoryHelper`):** Truy vấn ô kho đồ đang được trỏ chuột bằng Reflection (có caching), áp bộ lọc an toàn và phát lệnh click slot qua `ClientPlayerInteractionManager`.
 
 ---
 
 ## 5. Luồng dữ liệu (Data Flow)
-1. Người chơi nhấn hotkey trong game (`V` cho ThrowAll hoặc `X` cho MoveAll).
-2. `ClientTickEvents.END_CLIENT_TICK` phát hiện sự kiện phím tắt được kích hoạt.
-3. `ThrowAllMoveAllMod` chuyển giao lệnh xử lý tới `InventoryHelper`.
-4. `InventoryHelper` kiểm tra giao diện GUI hiện tại (`client.currentScreen`):
-   - Nếu là `HandledScreen`: Lấy `ScreenHandler`, xác định `Slot` được con trỏ chuột trỏ vào.
+1. `ThrowAllMoveAllMod` nạp cài đặt từ `.minecraft/config/throwallmoveall.json` thông qua `ModConfig.load()`.
+2. Trong mỗi Client Tick, `ComboKeyHandler` đọc trạng thái phím GLFW thấp và kiểm tra xem phím tổ hợp (VD: `Alt + Q` hoặc `Ctrl + Shift + V`) có được nhấn hay không.
+3. Khi phím tổ hợp hợp lệ được bấm, `InventoryHelper` kiểm tra `client.currentScreen`:
+   - Xác định `Slot` được trỏ chuột bằng Reflection (Cache Field).
    - Duyệt danh sách các `Slot` phù hợp trong kho đồ.
-5. Gửi gói tin tương tác `clickSlot` với loại thao tác tương ứng (`SlotActionType.QUICK_MOVE` hoặc `SlotActionType.THROW`) tới Server.
+4. Gửi gói tin tương tác `clickSlot` với loại thao tác tương ứng (`QUICK_MOVE` hoặc `THROW`) tới Server.
 
 ---
 
 ## 6. Cơ chế bảo mật (Security Mechanisms)
-- Mod hoàn toàn chạy ở môi trường **Client-side**, tuân thủ nghiêm ngặt giao thức mạng mặc định của Minecraft Protocol (Container Click Packets).
-- Không can thiệp hoặc thay đổi dữ liệu Server-side độc hại, tránh bị hệ thống Anti-Cheat coi là Packet Spam bằng cách gửi sự kiện click theo đúng thứ tự slot hợp lệ.
+- Tệp cấu hình JSON được lưu trữ an toàn trong thư mục chuẩn `config/` của Minecraft client.
+- Bắt sự kiện bàn phím mức thấp nhưng tuân thủ nguyên tắc khóa phím khi không ở giao diện kho đồ thích hợp.
 
 ---
 
 ## 7. APIs / Routes cốt lõi (Core APIs/Routes)
-- `ClientModInitializer.onInitializeClient()`: API khởi tạo Client Mod.
-- `KeyBindingHelper.registerKeyBinding(KeyBinding)`: Đăng ký phím bấm mới vào cấu hình Game.
-- `ClientTickEvents.END_CLIENT_TICK.register(ClientTick)`: Lắng nghe vòng lặp tick client.
-- `ClientPlayerInteractionManager.clickSlot(syncId, slotId, button, actionType, player)`: Thực hiện tương tác với ô kho đồ.
+- `ModConfig.load()` / `ModConfig.save()`: API quản lý tệp cấu hình JSON ngoài.
+- `InputUtil.isKeyPressed(windowHandle, keyCode)`: API kiểm tra trạng thái phím GLFW.
+- `ClientTickEvents.END_CLIENT_TICK.register(...)`: Vòng lặp lắng nghe client tick.
+- `ModMenuApi.getModConfigScreenFactory()`: API đăng ký màn hình Cài đặt trong Mod Menu.
 
 ---
 
@@ -86,11 +92,11 @@ d:/CodeJava/ModMinecraft/ThowAllMoveAll/
 ### Sơ đồ Luồng Kiến trúc Hệ thống (Flowchart)
 ```mermaid
 graph TD
-    A["Người chơi nhấn Hotkey (V / X)"] --> B["KeyBindings / ClientTickEvents"]
-    B --> C{"Loại hành động?"}
-    C -- "ThrowAll (Phím V)" --> D["InventoryHelper.executeThrowAll()"]
-    C -- "MoveAll (Phím X)" --> E["InventoryHelper.executeMoveAll()"]
-    D --> F["Kiểm tra Screen & Hovered Slot"]
+    A["Người chơi nhấn phím tổ hợp (Alt + Q / Ctrl + Shift + V)"] --> B["ComboKeyHandler.checkInput()"]
+    B --> C{"Kiểm tra phím chính & Modifiers (Alt/Ctrl/Shift)"}
+    C -- "Phím ThrowAll hợp lệ" --> D["InventoryHelper.executeThrowAll()"]
+    C -- "Phím MoveAll hợp lệ" --> E["InventoryHelper.executeMoveAll()"]
+    D --> F["Dùng Reflection Cache lấy Hovered Slot"]
     E --> F
     F --> G["Lặp qua các Slot chứa Item trùng khớp"]
     G -- "MoveAll" --> H["clickSlot(SlotActionType.QUICK_MOVE)"]
@@ -104,19 +110,20 @@ graph TD
 sequenceDiagram
     autonumber
     actor Player as Người chơi
-    participant KB as KeyBindings Listener
+    participant CK as ComboKeyHandler
+    participant CFG as ModConfig (JSON)
     participant IH as InventoryHelper
     participant MC as Minecraft Client
-    participant IM as InteractionManager
     participant SVR as Minecraft Server
 
-    Player->>KB: Nhấn phím ThrowAll (V) hoặc MoveAll (X)
-    KB->>IH: Gọi executeThrowAll() / executeMoveAll()
-    IH->>MC: Lấy currentScreen & ScreenHandler
-    MC-->>IH: Trả về HandledScreen và Slot được trỏ chuột
+    Player->>CK: Nhấn tổ hợp phím (VD: Alt + Q)
+    CK->>CFG: Đối chiếu cấu hình throwAllKey & Alt/Ctrl/Shift
+    CFG-->>CK: Trả về trạng thái hợp lệ
+    CK->>IH: Gọi executeThrowAll() / executeMoveAll()
+    IH->>MC: Đọc slot trỏ chuột bằng Reflection (cached Field)
     loop Lặp qua từng Slot phù hợp
-        IH->>IM: clickSlot(syncId, slotId, button, SlotActionType, player)
-        IM->>SVR: Gửi C2SPacket (Player Action Inventory)
+        IH->>MC: clickSlot(syncId, slotId, button, SlotActionType, player)
+        MC->>SVR: Gửi C2SPacket (Player Action Inventory)
     end
     SVR-->>MC: Đồng bộ hóa trạng thái kho đồ
 ```
@@ -124,8 +131,10 @@ sequenceDiagram
 ### Sơ đồ Mối quan hệ Thành phần (Component Relationship Diagram)
 ```mermaid
 erDiagram
-    ThrowAllMoveAllMod ||--|{ KeyBindings : "Đăng ký Phím"
-    ThrowAllMoveAllMod ||--|{ InventoryHelper : "Gọi Logic xử lý"
-    InventoryHelper ||--|| HandledScreen : "Truy vấn GUI Màn hình"
-    InventoryHelper ||--|| SlotActionType : "Tạo hành động Click Slot"
+    ThrowAllMoveAllMod ||--|| ModConfig : "Nạp cấu hình JSON"
+    ThrowAllMoveAllMod ||--|| ComboKeyHandler : "Lắng nghe phím Combo"
+    ModMenuIntegration ||--|| ModConfigScreen : "Khởi tạo màn hình GUI"
+    ModConfigScreen ||--|| ModConfig : "Lưu cài đặt phím"
+    ComboKeyHandler ||--|| InventoryHelper : "Gọi Logic kho đồ"
+    InventoryHelper ||--|| HandledScreen : "Đọc Slot trỏ chuột"
 ```
