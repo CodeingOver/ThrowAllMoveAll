@@ -4,7 +4,24 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ---
 
+### [v1.3.0] - 2026-07-25
+
+- **[Sửa lỗi]** Sửa lỗi tổ hợp `ALT + LEFT_CLICK` không hoạt động: Cài đặt raw GLFW mouse-button callback (`MouseComboHandler`) được inject trực tiếp vào GLFW window thay vì polling trong client tick, đảm bảo modifier keys được đọc từ bitmask GLFW trước khi Minecraft's screen system consume event.
+  - Thêm lớp mới `MouseComboHandler.java` extends `GLFWMouseButtonCallback`.
+  - `ThrowAllMoveAllMod` đăng ký callback sau khi client khởi động xong qua `ClientLifecycleEvents.CLIENT_STARTED`.
+  - `ComboKeyHandler` chỉ xử lý phím bàn phím; mouse button combo được uỷ thác sang `MouseComboHandler`.
+- **[Cập nhật]** Cải thiện giao diện `ModConfigScreen` theo đúng style **Item Scroller**:
+  - Layout 2 cột: nhãn tên hành động bên trái, nhóm `[keybind button] [↔] [RESET]` bên phải.
+  - Icon `↔` giữa keybind button và RESET button (đồng nhất với Item Scroller).
+  - Tiêu đề cột "Hotkey" phía trên nhóm button.
+  - Gợi ý vàng ở phía dưới màn hình khi đang ở chế độ lắng nghe phím.
+  - Preview live modifier keys (ví dụ `> CTRL + ALT + ...`) khi giữ modifier chưa nhả.
+- **[Cập nhật]** Phiên bản tăng lên `v1.3.0` trên `fabric.mod.json`.
+
+---
+
 ### [v1.2.0] - 2026-07-24
+
 
 - **[Thêm mới]** Nâng cấp hệ thống gán phím tổ hợp chuẩn **Item Scroller**: Hiển thị nút đơn biểu diễn toàn bộ chuỗi phím (VD: `LEFT_ALT + Q`, `LEFT_SHIFT + LEFT_CLICK`, `BUTTON_3`...).
 - **[Thêm mới]** Hỗ trợ gán phím bằng các nút click chuột (`LEFT_CLICK`, `RIGHT_CLICK`, `MIDDLE_CLICK`, `BUTTON_4`...).

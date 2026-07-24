@@ -1,8 +1,10 @@
 package com.example.throwallmoveall;
 
 import com.example.throwallmoveall.client.ComboKeyHandler;
+import com.example.throwallmoveall.client.MouseComboHandler;
 import com.example.throwallmoveall.config.ModConfig;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,16 @@ public class ThrowAllMoveAllMod implements ClientModInitializer {
         // 1. Load external JSON config (.minecraft/config/throwallmoveall.json)
         ModConfig.load();
 
-        // 2. Register end client tick event to handle combo key shortcuts
+        // 2. Install raw GLFW mouse callback once window is ready.
+        //    This fixes ALT+click combos being consumed by Minecraft's screen system
+        //    before our mod can see them.
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            MouseComboHandler.install(client);
+            LOGGER.info("MouseComboHandler installed on GLFW window.");
+        });
+
+        // 3. Register end client tick event to handle keyboard combo shortcuts only.
+        //    Mouse-button combos are now handled via raw GLFW callback in MouseComboHandler.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ComboKeyHandler.checkInput(client);
         });

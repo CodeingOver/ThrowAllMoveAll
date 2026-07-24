@@ -10,12 +10,35 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * Item-Scroller style Configuration GUI Screen.
- * Allows binding keyboard keys OR mouse clicks (LEFT_CLICK, RIGHT_CLICK, BUTTON_3) combined with Alt/Ctrl/Shift modifiers.
+ *
+ * Layout mimics Item Scroller's hotkey panel:
+ *   [label text]   [← key combo button (wide) →]  [↔]  [RESET]
+ *
+ * Listening mode:  click the key combo button → it turns gold and waits
+ *                  for the next key press or mouse click to bind.
  */
 public class ModConfigScreen extends Screen {
+
+    // ── Layout constants ────────────────────────────────────────────────────
+    /** X position of the left edge of the keybind + reset button group. */
+    private static final int COL_BIND_X   = 200; // offset from screen center-left area
+    private static final int BIND_W       = 160;
+    private static final int ICON_W       = 20;
+    private static final int RESET_W      = 50;
+    private static final int GAP          = 2;
+    private static final int ROW_H        = 20;
+    private static final int ROW_STRIDE   = 28;  // vertical distance between rows
+
+    // ── Colours ─────────────────────────────────────────────────────────────
+    private static final int COLOR_LABEL   = 0xFFE0E0E0;
+    private static final int COLOR_HINT    = 0xFFFFD700; // gold
+    private static final int COLOR_TITLE   = 0xFFFFFFFF;
+    private static final int COLOR_HEADER  = 0xFFAAAAAA;
+
+    // ── State ────────────────────────────────────────────────────────────────
     private final Screen parent;
-    private boolean listeningForThrow = false;
-    private boolean listeningForMove = false;
+    /** Which row is currently listening: 0=none, 1=throw, 2=move */
+    private int listeningRow = 0;
 
     private ButtonWidget throwComboButton;
     private ButtonWidget moveComboButton;
@@ -25,200 +48,258 @@ public class ModConfigScreen extends Screen {
         this.parent = parent;
     }
 
+    // ── Build widgets ────────────────────────────────────────────────────────
+
     @Override
     protected void init() {
-        int centerX = this.width / 2;
-        int startY = 60;
+        int cx = this.width / 2;
+        // We anchor the button group at cx - some offset so the label stays on the left
+        // The whole block (label + buttons) is centred horizontally.
+        // Total width of button group: BIND_W + GAP + ICON_W + GAP + RESET_W = 234
+        // Place button group starting at cx - (BIND_W/2 + ICON_W + GAP + RESET_W)/2 … simplest:
+        int blockLeft = cx - 10; // start of keybind button
+        int startY = this.height / 2 - ROW_STRIDE;
+
         ModConfig config = ModConfig.get();
 
-        // --- Row 1: ThrowAll Combo Button ---
-        this.throwComboButton = ButtonWidget.builder(
-                Text.literal(config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)),
-                btn -> {
-                    this.listeningForThrow = true;
-                    this.listeningForMove = false;
-                    btn.setMessage(Text.literal("> Press Key / Click Mouse <"));
-                }
-        ).dimensions(centerX - 100, startY, 200, 20).build();
+        // ── Row 1 : ThrowAll ─────────────────────────────────────────────
+        int y1 = startY;
 
-        ButtonWidget throwResetButton = ButtonWidget.builder(
+        this.throwComboButton = ButtonWidget.builder(
+                Text.literal(config.getComboDisplayString(
+                        config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)),
+                btn -> {
+                    listeningRow = 1;
+                    btn.setMessage(Text.literal("> Press key / click <"));
+                }
+        ).dimensions(blockLeft, y1, BIND_W, ROW_H).build();
+
+        // icon button  "↔"  (non-interactive, visual only)
+        ButtonWidget throwIconBtn = ButtonWidget.builder(
+                Text.literal("\u2194"),
+                btn -> {
+                    listeningRow = 1;
+                    this.throwComboButton.setMessage(Text.literal("> Press key / click <"));
+                }
+        ).dimensions(blockLeft + BIND_W + GAP, y1, ICON_W, ROW_H).build();
+
+        ButtonWidget throwResetBtn = ButtonWidget.builder(
                 Text.literal("RESET"),
                 btn -> {
-                    config.throwAllKey = GLFW.GLFW_KEY_V;
-                    config.throwAllAlt = false;
-                    config.throwAllCtrl = false;
+                    config.throwAllKey   = GLFW.GLFW_KEY_Q;
+                    config.throwAllAlt   = true;
+                    config.throwAllCtrl  = false;
                     config.throwAllShift = false;
-                    updateButtonLabels();
+                    listeningRow = 0;
+                    refreshLabels();
                 }
-        ).dimensions(centerX + 110, startY, 50, 20).build();
+        ).dimensions(blockLeft + BIND_W + GAP + ICON_W + GAP, y1, RESET_W, ROW_H).build();
 
         this.addDrawableChild(this.throwComboButton);
-        this.addDrawableChild(throwResetButton);
+        this.addDrawableChild(throwIconBtn);
+        this.addDrawableChild(throwResetBtn);
 
-        // --- Row 2: MoveAll Combo Button ---
-        int moveY = startY + 45;
+        // ── Row 2 : MoveAll ───────────────────────────────────────────────
+        int y2 = startY + ROW_STRIDE;
+
         this.moveComboButton = ButtonWidget.builder(
-                Text.literal(config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)),
+                Text.literal(config.getComboDisplayString(
+                        config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)),
                 btn -> {
-                    this.listeningForMove = true;
-                    this.listeningForThrow = false;
-                    btn.setMessage(Text.literal("> Press Key / Click Mouse <"));
+                    listeningRow = 2;
+                    btn.setMessage(Text.literal("> Press key / click <"));
                 }
-        ).dimensions(centerX - 100, moveY, 200, 20).build();
+        ).dimensions(blockLeft, y2, BIND_W, ROW_H).build();
 
-        ButtonWidget moveResetButton = ButtonWidget.builder(
+        ButtonWidget moveIconBtn = ButtonWidget.builder(
+                Text.literal("\u2194"),
+                btn -> {
+                    listeningRow = 2;
+                    this.moveComboButton.setMessage(Text.literal("> Press key / click <"));
+                }
+        ).dimensions(blockLeft + BIND_W + GAP, y2, ICON_W, ROW_H).build();
+
+        ButtonWidget moveResetBtn = ButtonWidget.builder(
                 Text.literal("RESET"),
                 btn -> {
-                    config.moveAllKey = GLFW.GLFW_KEY_X;
-                    config.moveAllAlt = false;
-                    config.moveAllCtrl = false;
+                    config.moveAllKey   = ModConfig.MOUSE_LEFT;
+                    config.moveAllAlt   = true;
+                    config.moveAllCtrl  = false;
                     config.moveAllShift = false;
-                    updateButtonLabels();
+                    listeningRow = 0;
+                    refreshLabels();
                 }
-        ).dimensions(centerX + 110, moveY, 50, 20).build();
+        ).dimensions(blockLeft + BIND_W + GAP + ICON_W + GAP, y2, RESET_W, ROW_H).build();
 
         this.addDrawableChild(this.moveComboButton);
-        this.addDrawableChild(moveResetButton);
+        this.addDrawableChild(moveIconBtn);
+        this.addDrawableChild(moveResetBtn);
 
-        // --- Row 3: Save & Close Button ---
-        int bottomY = moveY + 50;
+        // ── Save & Close ──────────────────────────────────────────────────
+        int y3 = y2 + ROW_STRIDE + 10;
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Save & Close"),
                 btn -> {
                     ModConfig.save();
                     this.client.setScreen(this.parent);
                 }
-        ).dimensions(centerX - 75, bottomY, 150, 20).build());
+        ).dimensions(cx - 55, y3, 110, ROW_H).build());
     }
 
-    private void updateButtonLabels() {
-        ModConfig config = ModConfig.get();
-        this.throwComboButton.setMessage(Text.literal(config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)));
-        this.moveComboButton.setMessage(Text.literal(config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)));
-    }
+    // ── Mouse capture ────────────────────────────────────────────────────────
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.listeningForThrow || this.listeningForMove) {
+        if (listeningRow != 0) {
             long window = this.client.getWindow().getHandle();
-            boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
-            boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
-            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+            boolean alt   = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
+            boolean ctrl  = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-            int mouseCode;
-            switch (button) {
-                case 0: mouseCode = ModConfig.MOUSE_LEFT; break;
-                case 1: mouseCode = ModConfig.MOUSE_RIGHT; break;
-                case 2: mouseCode = ModConfig.MOUSE_MIDDLE; break;
-                case 3: mouseCode = ModConfig.MOUSE_4; break;
-                case 4: mouseCode = ModConfig.MOUSE_5; break;
-                default: mouseCode = -100 + button; break;
-            }
+            // Convert GLFW mouse button index → our internal code
+            // GLFW button 0 (LEFT) → ModConfig.MOUSE_LEFT (-100), etc.
+            int mouseCode = switch (button) {
+                case 0 -> ModConfig.MOUSE_LEFT;
+                case 1 -> ModConfig.MOUSE_RIGHT;
+                case 2 -> ModConfig.MOUSE_MIDDLE;
+                case 3 -> ModConfig.MOUSE_4;
+                case 4 -> ModConfig.MOUSE_5;
+                default -> -100 - button;
+            };
 
-            ModConfig config = ModConfig.get();
-            if (this.listeningForThrow) {
-                config.throwAllKey = mouseCode;
-                config.throwAllAlt = alt;
-                config.throwAllCtrl = ctrl;
-                config.throwAllShift = shift;
-                this.listeningForThrow = false;
-            } else {
-                config.moveAllKey = mouseCode;
-                config.moveAllAlt = alt;
-                config.moveAllCtrl = ctrl;
-                config.moveAllShift = shift;
-                this.listeningForMove = false;
-            }
-
-            updateButtonLabels();
+            applyBind(mouseCode, alt, ctrl, shift);
             return true;
         }
-
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    // ── Keyboard capture ─────────────────────────────────────────────────────
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.listeningForThrow || this.listeningForMove) {
+        if (listeningRow != 0) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                this.listeningForThrow = false;
-                this.listeningForMove = false;
-                updateButtonLabels();
+                listeningRow = 0;
+                refreshLabels();
+                return true;
+            }
+
+            if (isModifier(keyCode)) {
+                // Show live preview while only modifiers are held
+                showModifierPreview(keyCode, modifiers);
                 return true;
             }
 
             long window = this.client.getWindow().getHandle();
-            boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
-            boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
-            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+            boolean alt   = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
+            boolean ctrl  = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                         || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-            if (isModifier(keyCode)) {
-                // Keep listening while modifier key is held
-                StringBuilder preview = new StringBuilder("> ");
-                if (ctrl || isCtrl(keyCode)) preview.append("LEFT_CONTROL + ");
-                if (alt || isAlt(keyCode)) preview.append("LEFT_ALT + ");
-                if (shift || isShift(keyCode)) preview.append("LEFT_SHIFT + ");
-                preview.append("... <");
-
-                if (this.listeningForThrow) this.throwComboButton.setMessage(Text.literal(preview.toString()));
-                else this.moveComboButton.setMessage(Text.literal(preview.toString()));
-
-                return true;
-            }
-
-            ModConfig config = ModConfig.get();
-            if (this.listeningForThrow) {
-                config.throwAllKey = keyCode;
-                config.throwAllAlt = alt;
-                config.throwAllCtrl = ctrl;
-                config.throwAllShift = shift;
-                this.listeningForThrow = false;
-            } else {
-                config.moveAllKey = keyCode;
-                config.moveAllAlt = alt;
-                config.moveAllCtrl = ctrl;
-                config.moveAllShift = shift;
-                this.listeningForMove = false;
-            }
-
-            updateButtonLabels();
+            applyBind(keyCode, alt, ctrl, shift);
             return true;
         }
-
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private boolean isModifier(int keyCode) {
-        return isAlt(keyCode) || isCtrl(keyCode) || isShift(keyCode);
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void applyBind(int code, boolean alt, boolean ctrl, boolean shift) {
+        ModConfig config = ModConfig.get();
+        if (listeningRow == 1) {
+            config.throwAllKey   = code;
+            config.throwAllAlt   = alt;
+            config.throwAllCtrl  = ctrl;
+            config.throwAllShift = shift;
+        } else {
+            config.moveAllKey   = code;
+            config.moveAllAlt   = alt;
+            config.moveAllCtrl  = ctrl;
+            config.moveAllShift = shift;
+        }
+        listeningRow = 0;
+        refreshLabels();
     }
 
-    private boolean isAlt(int keyCode) {
-        return keyCode == GLFW.GLFW_KEY_LEFT_ALT || keyCode == GLFW.GLFW_KEY_RIGHT_ALT;
+    private void showModifierPreview(int pressedKey, int mods) {
+        StringBuilder sb = new StringBuilder("> ");
+        if ((mods & GLFW.GLFW_MOD_CONTROL) != 0 || isCtrl(pressedKey))  sb.append("CTRL + ");
+        if ((mods & GLFW.GLFW_MOD_ALT)     != 0 || isAlt(pressedKey))   sb.append("ALT + ");
+        if ((mods & GLFW.GLFW_MOD_SHIFT)   != 0 || isShift(pressedKey)) sb.append("SHIFT + ");
+        sb.append("...");
+
+        String preview = sb.toString();
+        if (listeningRow == 1) this.throwComboButton.setMessage(Text.literal(preview));
+        else                    this.moveComboButton.setMessage(Text.literal(preview));
     }
 
-    private boolean isCtrl(int keyCode) {
-        return keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL;
+    private void refreshLabels() {
+        ModConfig config = ModConfig.get();
+        this.throwComboButton.setMessage(Text.literal(
+                config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)));
+        this.moveComboButton.setMessage(Text.literal(
+                config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)));
     }
 
-    private boolean isShift(int keyCode) {
-        return keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT;
-    }
+    private boolean isModifier(int k) { return isAlt(k) || isCtrl(k) || isShift(k); }
+    private boolean isAlt(int k)   { return k == GLFW.GLFW_KEY_LEFT_ALT   || k == GLFW.GLFW_KEY_RIGHT_ALT; }
+    private boolean isCtrl(int k)  { return k == GLFW.GLFW_KEY_LEFT_CONTROL || k == GLFW.GLFW_KEY_RIGHT_CONTROL; }
+    private boolean isShift(int k) { return k == GLFW.GLFW_KEY_LEFT_SHIFT  || k == GLFW.GLFW_KEY_RIGHT_SHIFT; }
+
+    // ── Render ────────────────────────────────────────────────────────────────
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
-        int centerX = this.width / 2;
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        this.renderBackground(ctx, mouseX, mouseY, delta);
 
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, centerX, 15, 0xFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("dropAllMatching (ThrowAll):"), centerX - 230, 65, 0xE0E0E0);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("moveAll (MoveAll):"), centerX - 230, 110, 0xE0E0E0);
+        int cx = this.width / 2;
+        int blockLeft = cx - 10;
+        int startY = this.height / 2 - ROW_STRIDE;
 
-        if (this.listeningForThrow || this.listeningForMove) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Press any Key OR Click Mouse Button (LEFT_CLICK, RIGHT_CLICK...) to bind combo."), centerX, this.height - 30, 0xFFD700);
+        // ── Title ────────────────────────────────────────────────────────────
+        ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, cx, 18, COLOR_TITLE);
+
+        // ── Column header "Hotkey" above the bind buttons ─────────────────
+        ctx.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("Hotkey"),
+                blockLeft + BIND_W / 2,
+                startY - 14,
+                COLOR_HEADER
+        );
+
+        // ── Row labels (left-aligned, vertically centred with buttons) ─────
+        int labelX = cx - 190;
+        drawRowLabel(ctx, "dropAllMatching (ThrowAll):", labelX, startY);
+        drawRowLabel(ctx, "moveAll (MoveAll):",           labelX, startY + ROW_STRIDE);
+
+        // ── Listening hint at the bottom ──────────────────────────────────
+        if (listeningRow != 0) {
+            ctx.drawCenteredTextWithShadow(
+                    this.textRenderer,
+                    Text.literal("Press any key or click a mouse button to bind  |  ESC to cancel"),
+                    cx,
+                    this.height - 24,
+                    COLOR_HINT
+            );
         }
 
-        super.render(context, mouseX, mouseY, delta);
+        super.render(ctx, mouseX, mouseY, delta);
     }
+
+    /** Draws a right-aligned row label so the text hugs the button group. */
+    private void drawRowLabel(DrawContext ctx, String text, int x, int buttonY) {
+        // vertically centre the text within the button height
+        int textY = buttonY + (ROW_H - this.textRenderer.fontHeight) / 2 + 1;
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(text), x, textY, COLOR_LABEL);
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     public void close() {

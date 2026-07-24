@@ -7,8 +7,12 @@ import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Low-level combo key & mouse button event handler (Item Scroller style).
- * Handles combinations like LEFT_ALT + Q, LEFT_SHIFT + LEFT_CLICK, BUTTON_3, etc.
+ * Keyboard combo handler — runs every client tick.
+ *
+ * Mouse-button combos (e.g. ALT + LEFT_CLICK) are intentionally NOT polled here;
+ * they are captured by the raw GLFW callback in {@link MouseComboHandler} so that
+ * modifier keys such as ALT are read correctly from the GLFW mods bitmask before
+ * Minecraft's screen system can consume the event.
  */
 public class ComboKeyHandler {
 
@@ -29,14 +33,19 @@ public class ComboKeyHandler {
         ModConfig config = ModConfig.get();
 
         // Detect active modifier key states
-        boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
-        boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
-        boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+        boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT)
+                || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
+        boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+        boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-        // 1. Check ThrowAll Shortcut Combo
-        if (config.throwAllKey != GLFW.GLFW_KEY_UNKNOWN) {
-            boolean keyIsDown = isTriggerPressed(window, config.throwAllKey);
-            boolean modifiersMatch = (config.throwAllAlt == alt) && (config.throwAllCtrl == ctrl) && (config.throwAllShift == shift);
+        // --- ThrowAll (keyboard keys only; negative codes are mouse → skip) ---
+        if (config.throwAllKey > 0) {
+            boolean keyIsDown = InputUtil.isKeyPressed(window, config.throwAllKey);
+            boolean modifiersMatch = (config.throwAllAlt == alt)
+                    && (config.throwAllCtrl == ctrl)
+                    && (config.throwAllShift == shift);
 
             if (keyIsDown && modifiersMatch) {
                 if (!wasThrowPressed) {
@@ -46,12 +55,16 @@ public class ComboKeyHandler {
             } else {
                 wasThrowPressed = false;
             }
+        } else {
+            wasThrowPressed = false;
         }
 
-        // 2. Check MoveAll Shortcut Combo
-        if (config.moveAllKey != GLFW.GLFW_KEY_UNKNOWN) {
-            boolean keyIsDown = isTriggerPressed(window, config.moveAllKey);
-            boolean modifiersMatch = (config.moveAllAlt == alt) && (config.moveAllCtrl == ctrl) && (config.moveAllShift == shift);
+        // --- MoveAll (keyboard keys only; negative codes are mouse → handled by MouseComboHandler) ---
+        if (config.moveAllKey > 0) {
+            boolean keyIsDown = InputUtil.isKeyPressed(window, config.moveAllKey);
+            boolean modifiersMatch = (config.moveAllAlt == alt)
+                    && (config.moveAllCtrl == ctrl)
+                    && (config.moveAllShift == shift);
 
             if (keyIsDown && modifiersMatch) {
                 if (!wasMovePressed) {
@@ -61,20 +74,8 @@ public class ComboKeyHandler {
             } else {
                 wasMovePressed = false;
             }
-        }
-    }
-
-    /**
-     * Checks if target keyboard key OR mouse button is pressed.
-     */
-    private static boolean isTriggerPressed(long window, int triggerCode) {
-        if (triggerCode < 0) {
-            // Negative triggerCode represents Mouse Button
-            int mouseButton = -100 - triggerCode;
-            return GLFW.glfwGetMouseButton(window, mouseButton) == GLFW.GLFW_PRESS;
         } else {
-            // Positive triggerCode represents Keyboard Key
-            return InputUtil.isKeyPressed(window, triggerCode);
+            wasMovePressed = false;
         }
     }
 }
