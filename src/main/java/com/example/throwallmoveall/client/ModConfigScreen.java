@@ -4,27 +4,21 @@ import com.example.throwallmoveall.config.ModConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Clean English Configuration GUI Screen for ThrowAll & MoveAll Mod.
- * Supports intuitive combo key binding (automatically captures Alt, Ctrl, Shift modifiers while awaiting main key).
+ * Item-Scroller style Configuration GUI Screen.
+ * Allows binding keyboard keys OR mouse clicks (LEFT_CLICK, RIGHT_CLICK, BUTTON_3) combined with Alt/Ctrl/Shift modifiers.
  */
 public class ModConfigScreen extends Screen {
     private final Screen parent;
-    private boolean listeningForThrowKey = false;
-    private boolean listeningForMoveKey = false;
+    private boolean listeningForThrow = false;
+    private boolean listeningForMove = false;
 
-    private ButtonWidget throwKeyButton;
-    private ButtonWidget throwAltButton;
-    private ButtonWidget throwCtrlButton;
-    private ButtonWidget throwShiftButton;
-
-    private ButtonWidget moveKeyButton;
-    private ButtonWidget moveAltButton;
-    private ButtonWidget moveCtrlButton;
-    private ButtonWidget moveShiftButton;
+    private ButtonWidget throwComboButton;
+    private ButtonWidget moveComboButton;
 
     public ModConfigScreen(Screen parent) {
         super(Text.literal("ThrowAll & MoveAll Configuration"));
@@ -34,169 +28,159 @@ public class ModConfigScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int startY = 50;
+        int startY = 60;
         ModConfig config = ModConfig.get();
 
-        // --- Row 1: ThrowAll Options ---
-        this.throwKeyButton = ButtonWidget.builder(
-                Text.literal("Key: " + config.getKeyName(config.throwAllKey)),
+        // --- Row 1: ThrowAll Combo Button ---
+        this.throwComboButton = ButtonWidget.builder(
+                Text.literal(config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)),
                 btn -> {
-                    this.listeningForThrowKey = true;
-                    this.listeningForMoveKey = false;
-                    btn.setMessage(Text.literal("> Press Key... <"));
+                    this.listeningForThrow = true;
+                    this.listeningForMove = false;
+                    btn.setMessage(Text.literal("> Press Key / Click Mouse <"));
                 }
-        ).dimensions(centerX - 150, startY, 100, 20).build();
+        ).dimensions(centerX - 100, startY, 200, 20).build();
 
-        this.throwAltButton = ButtonWidget.builder(
-                Text.literal("Alt: " + (config.throwAllAlt ? "ON" : "OFF")),
-                btn -> {
-                    config.throwAllAlt = !config.throwAllAlt;
-                    btn.setMessage(Text.literal("Alt: " + (config.throwAllAlt ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX - 45, startY, 60, 20).build();
-
-        this.throwCtrlButton = ButtonWidget.builder(
-                Text.literal("Ctrl: " + (config.throwAllCtrl ? "ON" : "OFF")),
-                btn -> {
-                    config.throwAllCtrl = !config.throwAllCtrl;
-                    btn.setMessage(Text.literal("Ctrl: " + (config.throwAllCtrl ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX + 20, startY, 60, 20).build();
-
-        this.throwShiftButton = ButtonWidget.builder(
-                Text.literal("Shift: " + (config.throwAllShift ? "ON" : "OFF")),
-                btn -> {
-                    config.throwAllShift = !config.throwAllShift;
-                    btn.setMessage(Text.literal("Shift: " + (config.throwAllShift ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX + 85, startY, 65, 20).build();
-
-        this.addDrawableChild(this.throwKeyButton);
-        this.addDrawableChild(this.throwAltButton);
-        this.addDrawableChild(this.throwCtrlButton);
-        this.addDrawableChild(this.throwShiftButton);
-
-        // --- Row 2: MoveAll Options ---
-        int moveY = startY + 45;
-        this.moveKeyButton = ButtonWidget.builder(
-                Text.literal("Key: " + config.getKeyName(config.moveAllKey)),
-                btn -> {
-                    this.listeningForMoveKey = true;
-                    this.listeningForThrowKey = false;
-                    btn.setMessage(Text.literal("> Press Key... <"));
-                }
-        ).dimensions(centerX - 150, moveY, 100, 20).build();
-
-        this.moveAltButton = ButtonWidget.builder(
-                Text.literal("Alt: " + (config.moveAllAlt ? "ON" : "OFF")),
-                btn -> {
-                    config.moveAllAlt = !config.moveAllAlt;
-                    btn.setMessage(Text.literal("Alt: " + (config.moveAllAlt ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX - 45, moveY, 60, 20).build();
-
-        this.moveCtrlButton = ButtonWidget.builder(
-                Text.literal("Ctrl: " + (config.moveAllCtrl ? "ON" : "OFF")),
-                btn -> {
-                    config.moveAllCtrl = !config.moveAllCtrl;
-                    btn.setMessage(Text.literal("Ctrl: " + (config.moveAllCtrl ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX + 20, moveY, 60, 20).build();
-
-        this.moveShiftButton = ButtonWidget.builder(
-                Text.literal("Shift: " + (config.moveAllShift ? "ON" : "OFF")),
-                btn -> {
-                    config.moveAllShift = !config.moveAllShift;
-                    btn.setMessage(Text.literal("Shift: " + (config.moveAllShift ? "ON" : "OFF")));
-                }
-        ).dimensions(centerX + 85, moveY, 65, 20).build();
-
-        this.addDrawableChild(this.moveKeyButton);
-        this.addDrawableChild(this.moveAltButton);
-        this.addDrawableChild(this.moveCtrlButton);
-        this.addDrawableChild(this.moveShiftButton);
-
-        // --- Bottom Controls ---
-        int bottomY = moveY + 45;
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Reset Default"),
+        ButtonWidget throwResetButton = ButtonWidget.builder(
+                Text.literal("RESET"),
                 btn -> {
                     config.throwAllKey = GLFW.GLFW_KEY_V;
                     config.throwAllAlt = false;
                     config.throwAllCtrl = false;
                     config.throwAllShift = false;
+                    updateButtonLabels();
+                }
+        ).dimensions(centerX + 110, startY, 50, 20).build();
 
+        this.addDrawableChild(this.throwComboButton);
+        this.addDrawableChild(throwResetButton);
+
+        // --- Row 2: MoveAll Combo Button ---
+        int moveY = startY + 45;
+        this.moveComboButton = ButtonWidget.builder(
+                Text.literal(config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)),
+                btn -> {
+                    this.listeningForMove = true;
+                    this.listeningForThrow = false;
+                    btn.setMessage(Text.literal("> Press Key / Click Mouse <"));
+                }
+        ).dimensions(centerX - 100, moveY, 200, 20).build();
+
+        ButtonWidget moveResetButton = ButtonWidget.builder(
+                Text.literal("RESET"),
+                btn -> {
                     config.moveAllKey = GLFW.GLFW_KEY_X;
                     config.moveAllAlt = false;
                     config.moveAllCtrl = false;
                     config.moveAllShift = false;
-
                     updateButtonLabels();
                 }
-        ).dimensions(centerX - 150, bottomY, 100, 20).build());
+        ).dimensions(centerX + 110, moveY, 50, 20).build();
 
+        this.addDrawableChild(this.moveComboButton);
+        this.addDrawableChild(moveResetButton);
+
+        // --- Row 3: Save & Close Button ---
+        int bottomY = moveY + 50;
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Save & Close"),
                 btn -> {
                     ModConfig.save();
                     this.client.setScreen(this.parent);
                 }
-        ).dimensions(centerX - 40, bottomY, 190, 20).build());
+        ).dimensions(centerX - 75, bottomY, 150, 20).build());
     }
 
     private void updateButtonLabels() {
         ModConfig config = ModConfig.get();
-        this.throwKeyButton.setMessage(Text.literal("Key: " + config.getKeyName(config.throwAllKey)));
-        this.throwAltButton.setMessage(Text.literal("Alt: " + (config.throwAllAlt ? "ON" : "OFF")));
-        this.throwCtrlButton.setMessage(Text.literal("Ctrl: " + (config.throwAllCtrl ? "ON" : "OFF")));
-        this.throwShiftButton.setMessage(Text.literal("Shift: " + (config.throwAllShift ? "ON" : "OFF")));
-
-        this.moveKeyButton.setMessage(Text.literal("Key: " + config.getKeyName(config.moveAllKey)));
-        this.moveAltButton.setMessage(Text.literal("Alt: " + (config.moveAllAlt ? "ON" : "OFF")));
-        this.moveCtrlButton.setMessage(Text.literal("Ctrl: " + (config.moveAllCtrl ? "ON" : "OFF")));
-        this.moveShiftButton.setMessage(Text.literal("Shift: " + (config.moveAllShift ? "ON" : "OFF")));
+        this.throwComboButton.setMessage(Text.literal(config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)));
+        this.moveComboButton.setMessage(Text.literal(config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)));
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        ModConfig config = ModConfig.get();
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.listeningForThrow || this.listeningForMove) {
+            long window = this.client.getWindow().getHandle();
+            boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
+            boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-        if (this.listeningForThrowKey) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                this.listeningForThrowKey = false;
-                this.throwKeyButton.setMessage(Text.literal("Key: " + config.getKeyName(config.throwAllKey)));
-                return true;
+            int mouseCode;
+            switch (button) {
+                case 0: mouseCode = ModConfig.MOUSE_LEFT; break;
+                case 1: mouseCode = ModConfig.MOUSE_RIGHT; break;
+                case 2: mouseCode = ModConfig.MOUSE_MIDDLE; break;
+                case 3: mouseCode = ModConfig.MOUSE_4; break;
+                case 4: mouseCode = ModConfig.MOUSE_5; break;
+                default: mouseCode = -100 + button; break;
             }
-            if (isModifier(keyCode)) {
-                if (isAlt(keyCode)) config.throwAllAlt = !config.throwAllAlt;
-                if (isCtrl(keyCode)) config.throwAllCtrl = !config.throwAllCtrl;
-                if (isShift(keyCode)) config.throwAllShift = !config.throwAllShift;
-                updateButtonLabels();
-                this.throwKeyButton.setMessage(Text.literal("> Press Key... <"));
-                return true;
+
+            ModConfig config = ModConfig.get();
+            if (this.listeningForThrow) {
+                config.throwAllKey = mouseCode;
+                config.throwAllAlt = alt;
+                config.throwAllCtrl = ctrl;
+                config.throwAllShift = shift;
+                this.listeningForThrow = false;
+            } else {
+                config.moveAllKey = mouseCode;
+                config.moveAllAlt = alt;
+                config.moveAllCtrl = ctrl;
+                config.moveAllShift = shift;
+                this.listeningForMove = false;
             }
-            config.throwAllKey = keyCode;
-            this.listeningForThrowKey = false;
+
             updateButtonLabels();
             return true;
         }
 
-        if (this.listeningForMoveKey) {
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.listeningForThrow || this.listeningForMove) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                this.listeningForMoveKey = false;
-                this.moveKeyButton.setMessage(Text.literal("Key: " + config.getKeyName(config.moveAllKey)));
-                return true;
-            }
-            if (isModifier(keyCode)) {
-                if (isAlt(keyCode)) config.moveAllAlt = !config.moveAllAlt;
-                if (isCtrl(keyCode)) config.moveAllCtrl = !config.moveAllCtrl;
-                if (isShift(keyCode)) config.moveAllShift = !config.moveAllShift;
+                this.listeningForThrow = false;
+                this.listeningForMove = false;
                 updateButtonLabels();
-                this.moveKeyButton.setMessage(Text.literal("> Press Key... <"));
                 return true;
             }
-            config.moveAllKey = keyCode;
-            this.listeningForMoveKey = false;
+
+            long window = this.client.getWindow().getHandle();
+            boolean alt = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_ALT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_ALT);
+            boolean ctrl = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+            boolean shift = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+
+            if (isModifier(keyCode)) {
+                // Keep listening while modifier key is held
+                StringBuilder preview = new StringBuilder("> ");
+                if (ctrl || isCtrl(keyCode)) preview.append("LEFT_CONTROL + ");
+                if (alt || isAlt(keyCode)) preview.append("LEFT_ALT + ");
+                if (shift || isShift(keyCode)) preview.append("LEFT_SHIFT + ");
+                preview.append("... <");
+
+                if (this.listeningForThrow) this.throwComboButton.setMessage(Text.literal(preview.toString()));
+                else this.moveComboButton.setMessage(Text.literal(preview.toString()));
+
+                return true;
+            }
+
+            ModConfig config = ModConfig.get();
+            if (this.listeningForThrow) {
+                config.throwAllKey = keyCode;
+                config.throwAllAlt = alt;
+                config.throwAllCtrl = ctrl;
+                config.throwAllShift = shift;
+                this.listeningForThrow = false;
+            } else {
+                config.moveAllKey = keyCode;
+                config.moveAllAlt = alt;
+                config.moveAllCtrl = ctrl;
+                config.moveAllShift = shift;
+                this.listeningForMove = false;
+            }
+
             updateButtonLabels();
             return true;
         }
@@ -226,11 +210,11 @@ public class ModConfigScreen extends Screen {
         int centerX = this.width / 2;
 
         context.drawCenteredTextWithShadow(this.textRenderer, this.title, centerX, 15, 0xFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("ThrowAll Shortcut:"), centerX - 150, 35, 0xAAAAAA);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("MoveAll Shortcut:"), centerX - 150, 80, 0xAAAAAA);
+        context.drawTextWithShadow(this.textRenderer, Text.literal("dropAllMatching (ThrowAll):"), centerX - 230, 65, 0xE0E0E0);
+        context.drawTextWithShadow(this.textRenderer, Text.literal("moveAll (MoveAll):"), centerX - 230, 110, 0xE0E0E0);
 
-        if (this.listeningForThrowKey || this.listeningForMoveKey) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Press any main key (e.g. Q, V, X). Press Alt/Ctrl/Shift to toggle modifiers."), centerX, this.height - 30, 0xFFD700);
+        if (this.listeningForThrow || this.listeningForMove) {
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Press any Key OR Click Mouse Button (LEFT_CLICK, RIGHT_CLICK...) to bind combo."), centerX, this.height - 30, 0xFFD700);
         }
 
         super.render(context, mouseX, mouseY, delta);

@@ -4,6 +4,14 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ---
 
+### [v1.2.0] - 2026-07-24
+
+- **[Thêm mới]** Nâng cấp hệ thống gán phím tổ hợp chuẩn **Item Scroller**: Hiển thị nút đơn biểu diễn toàn bộ chuỗi phím (VD: `LEFT_ALT + Q`, `LEFT_SHIFT + LEFT_CLICK`, `BUTTON_3`...).
+- **[Thêm mới]** Hỗ trợ gán phím bằng các nút click chuột (`LEFT_CLICK`, `RIGHT_CLICK`, `MIDDLE_CLICK`, `BUTTON_4`...).
+- **[Cập nhật]** Tăng phiên bản chính thức lên `v1.2.0` trên `pom.xml`, `gradle.properties` và `fabric.mod.json`.
+
+---
+
 ### [v1.1.1] - 2026-07-24
 
 - **[Sửa lỗi]** Sửa lỗi cảnh báo `broken icon` của Fabric Loader bằng cách re-encode tệp `icon.png` thành định dạng chuẩn 128x128 32-bit ARGB PNG.
