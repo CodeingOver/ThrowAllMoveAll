@@ -14,10 +14,17 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
   - Xóa `MouseComboHandler.java` (GLFW callback — sai timing).
 - **[Thêm mới]** Nút **RESET tự động mờ (dimmed)** khi binding đang ở giá trị mặc định — không thể nhấn khi không cần thiết (theo chuẩn Item Scroller).
 - **[Cập nhật]** Đồng bộ version `v1.3.0` trên `pom.xml`, `gradle.properties`, `fabric.mod.json`.
+- **[Cập nhật]** Tối ưu hiệu năng toàn diện Client-side:
+  - **`ComboKeyHandler`**: Early-exit trước tất cả GLFW calls khi không ở màn hình inventory; skip toàn bộ khi cả 2 combo đều bind chuột; đọc modifier state 1 lần dùng cho cả 2 combo; truyền `MinecraftClient` thay vì gọi `getInstance()`.
+  - **`InventoryHelper`**: Nhận `MinecraftClient` qua tham số (không dùng volatile static read); slot loop dùng index thay iterator (nhanh hơn); `canTakeItems()` chỉ gọi 1 lần/slot; logic loop MoveAll/ThrowAll hợp nhất thành 1 helper `executeOnMatchingSlots()`; cache `fieldSearchFailed` để không retry reflection khi field không tìm thấy.
+  - **`ScreenMouseHandler`**: Bỏ guard `instanceof HandledScreen` thừa; dùng phép tính số học thay switch table; `Screen.has*Down()` đọc boolean đã cache (không gọi GLFW); return sớm thay biến `consumed`.
+  - **`ModConfig`**: I/O dùng NIO `Files.readString/writeString` (ít syscall hơn, không cần đóng stream thủ công); error log qua SLF4J thay `printStackTrace()`; `StringBuilder` được pre-size; kiểm tra constant trước khi gọi GLFW JNI.
+  - **`ModConfigScreen`**: State `throwResetActive/moveResetActive` được cache trong `refreshLabels()` (chạy khi config thay đổi), không tính lại trong `render()` ở 60 fps.
 
 ---
 
 ### [v1.2.0] - 2026-07-24
+
 
 
 

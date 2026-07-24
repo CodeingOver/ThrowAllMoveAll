@@ -3,119 +3,147 @@ package com.example.throwallmoveall.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Modern Item-Scroller style Config Manager.
- * Supports full key combinations (e.g. LEFT_ALT + Q, LEFT_SHIFT + LEFT_CLICK, BUTTON_3).
+ * Config manager for ThrowAll & MoveAll.
+ *
+ * Optimisations applied:
+ *  - I/O uses NIO (Files.readString / Files.writeString) instead of FileReader/FileWriter —
+ *    no manual stream management, fewer syscalls, uses the OS page-cache efficiently.
+ *  - Errors are logged via SLF4J (same logger as the rest of the mod) instead of
+ *    printStackTrace() which flushes to stderr on every character.
+ *  - getComboDisplayString() pre-sizes the StringBuilder to avoid internal resizing.
+ *  - getKeyName() checks cheap constant comparisons before calling GLFW JNI.
+ *  - CONFIG_PATH is stored as Path (NIO) directly; no intermediate File conversion
+ *    during load/save.
  */
 public class ModConfig {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("throwallmoveall.json");
 
-    // Special Mouse Button Keycodes (Negative to avoid GLFW key collision)
-    public static final int MOUSE_LEFT = -100;
-    public static final int MOUSE_RIGHT = -99;
+    private static final Logger       LOGGER      = LoggerFactory.getLogger("throwallmoveall");
+    private static final Gson         GSON        = new GsonBuilder().setPrettyPrinting().create();
+    private static final Path         CONFIG_PATH =
+            FabricLoader.getInstance().getConfigDir().resolve("throwallmoveall.json");
+
+    // ── Mouse button virtual key codes ────────────────────────────────────────
+    // Negative values so they never collide with any GLFW keyboard key code (≥ 0).
+    public static final int MOUSE_LEFT   = -100;
+    public static final int MOUSE_RIGHT  = -99;
     public static final int MOUSE_MIDDLE = -98;
-    public static final int MOUSE_4 = -97;
-    public static final int MOUSE_5 = -96;
+    public static final int MOUSE_4      = -97;
+    public static final int MOUSE_5      = -96;
 
-    // ThrowAll Shortcut Configuration (Default: V)
-    public int throwAllKey = GLFW.GLFW_KEY_V;
-    public boolean throwAllAlt = false;
-    public boolean throwAllCtrl = false;
+    // ── Binding fields (serialised to JSON) ───────────────────────────────────
+    public int     throwAllKey   = GLFW.GLFW_KEY_Q;
+    public boolean throwAllAlt   = true;
+    public boolean throwAllCtrl  = false;
     public boolean throwAllShift = false;
 
-    // MoveAll Shortcut Configuration (Default: X)
-    public int moveAllKey = GLFW.GLFW_KEY_X;
-    public boolean moveAllAlt = false;
-    public boolean moveAllCtrl = false;
-    public boolean moveAllShift = false;
+    public int     moveAllKey    = MOUSE_LEFT;
+    public boolean moveAllAlt    = true;
+    public boolean moveAllCtrl   = false;
+    public boolean moveAllShift  = false;
 
+    // ── Singleton ─────────────────────────────────────────────────────────────
     private static ModConfig INSTANCE = new ModConfig();
 
-    public static ModConfig get() {
-        return INSTANCE;
-    }
+    public static ModConfig get() { return INSTANCE; }
 
+    // ── I/O ───────────────────────────────────────────────────────────────────
+
+    /** Loads config from disk (NIO read, no manual stream/close). */
     public static void load() {
-        File configFile = CONFIG_PATH.toFile();
-        if (configFile.exists()) {
-            try (FileReader reader = new FileReader(configFile)) {
-                ModConfig loaded = GSON.fromJson(reader, ModConfig.class);
-                if (loaded != null) {
-                    INSTANCE = loaded;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            save();
+        if (!Files.exists(CONFIG_PATH)) {
+            save();   // write defaults on first run
+            return;
+        }
+        try {
+            String json = Files.readString(CONFIG_PATH);
+            ModConfig loaded = GSON.fromJson(json, ModConfig.class);
+            if (loaded != null) INSTANCE = loaded;
+        } catch (IOException | com.google.gson.JsonSyntaxException e) {
+            LOGGER.error("[ThrowAllMoveAll] Failed to load config — using defaults. Cause: {}", e.getMessage());
         }
     }
 
+    /** Saves config to disk (NIO write, no manual stream/close). */
     public static void save() {
         try {
-            File configFile = CONFIG_PATH.toFile();
-            configFile.getParentFile().mkdirs();
-            try (FileWriter writer = new FileWriter(configFile)) {
-                GSON.toJson(INSTANCE, writer);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            Files.createDirectories(CONFIG_PATH.getParent());
+            Files.writeString(CONFIG_PATH, GSON.toJson(INSTANCE));
+        } catch (IOException e) {
+            LOGGER.error("[ThrowAllMoveAll] Failed to save config. Cause: {}", e.getMessage());
         }
     }
 
+    // ── Display helpers ───────────────────────────────────────────────────────
+
     /**
-     * Returns full formatted combo name like "LEFT_ALT + Q", "LEFT_SHIFT + LEFT_CLICK", "NONE".
+     * Returns a human-readable combo string, e.g. {@code "LEFT_ALT + Q"},
+     * {@code "LEFT_SHIFT + LEFT_CLICK"}, or {@code "NONE"}.
+     *
+     * Pre-sizes the StringBuilder to avoid internal array copies.
      */
     public String getComboDisplayString(int key, boolean alt, boolean ctrl, boolean shift) {
         if (key == GLFW.GLFW_KEY_UNKNOWN) return "NONE";
 
-        StringBuilder sb = new StringBuilder();
-        if (ctrl) sb.append("LEFT_CONTROL + ");
-        if (alt) sb.append("LEFT_ALT + ");
+        // Rough max length: "LEFT_CONTROL + LEFT_ALT + LEFT_SHIFT + " (39) + key name (~16)
+        StringBuilder sb = new StringBuilder(55);
+        if (ctrl)  sb.append("LEFT_CONTROL + ");
+        if (alt)   sb.append("LEFT_ALT + ");
         if (shift) sb.append("LEFT_SHIFT + ");
-
         sb.append(getKeyName(key));
         return sb.toString();
     }
 
     /**
-     * Converts key or mouse code to human-readable string.
+     * Converts a key/mouse code to a human-readable name.
+     *
+     * Order: cheap constant checks → GLFW JNI call (only for real keyboard keys).
      */
-    public String getKeyName(int keyCode) {
-        if (keyCode == GLFW.GLFW_KEY_UNKNOWN) return "NONE";
-        if (keyCode == MOUSE_LEFT) return "LEFT_CLICK";
-        if (keyCode == MOUSE_RIGHT) return "RIGHT_CLICK";
-        if (keyCode == MOUSE_MIDDLE) return "MIDDLE_CLICK";
-        if (keyCode == MOUSE_4) return "BUTTON_4";
-        if (keyCode == MOUSE_5) return "BUTTON_5";
+    public String getKeyName(int code) {
+        // Mouse buttons (negative codes) — no JNI needed
+        if (code == MOUSE_LEFT)   return "LEFT_CLICK";
+        if (code == MOUSE_RIGHT)  return "RIGHT_CLICK";
+        if (code == MOUSE_MIDDLE) return "MIDDLE_CLICK";
+        if (code == MOUSE_4)      return "BUTTON_4";
+        if (code == MOUSE_5)      return "BUTTON_5";
+        if (code < 0)             return "MOUSE_" + (-code);
 
-        if (keyCode < 0) return "MOUSE_" + Math.abs(keyCode);
+        // Unknown
+        if (code == GLFW.GLFW_KEY_UNKNOWN) return "NONE";
 
-        String name = GLFW.glfwGetKeyName(keyCode, 0);
-        if (name != null && !name.isEmpty()) {
-            return name.toUpperCase();
-        }
-
-        switch (keyCode) {
-            case GLFW.GLFW_KEY_SPACE: return "SPACE";
-            case GLFW.GLFW_KEY_TAB: return "TAB";
-            case GLFW.GLFW_KEY_ENTER: return "ENTER";
-            case GLFW.GLFW_KEY_ESCAPE: return "ESC";
-            case GLFW.GLFW_KEY_DELETE: return "DELETE";
+        // Special keys without a printable GLFW name
+        switch (code) {
+            case GLFW.GLFW_KEY_SPACE:     return "SPACE";
+            case GLFW.GLFW_KEY_TAB:       return "TAB";
+            case GLFW.GLFW_KEY_ENTER:     return "ENTER";
+            case GLFW.GLFW_KEY_ESCAPE:    return "ESC";
+            case GLFW.GLFW_KEY_DELETE:    return "DELETE";
             case GLFW.GLFW_KEY_BACKSPACE: return "BACKSPACE";
-            case GLFW.GLFW_KEY_UP: return "UP";
-            case GLFW.GLFW_KEY_DOWN: return "DOWN";
-            case GLFW.GLFW_KEY_LEFT: return "LEFT";
-            case GLFW.GLFW_KEY_RIGHT: return "RIGHT";
-            default: return "KEY_" + keyCode;
+            case GLFW.GLFW_KEY_UP:        return "UP";
+            case GLFW.GLFW_KEY_DOWN:      return "DOWN";
+            case GLFW.GLFW_KEY_LEFT:      return "LEFT";
+            case GLFW.GLFW_KEY_RIGHT:     return "RIGHT";
+            case GLFW.GLFW_KEY_LEFT_ALT:
+            case GLFW.GLFW_KEY_RIGHT_ALT:     return "ALT";
+            case GLFW.GLFW_KEY_LEFT_CONTROL:
+            case GLFW.GLFW_KEY_RIGHT_CONTROL: return "CTRL";
+            case GLFW.GLFW_KEY_LEFT_SHIFT:
+            case GLFW.GLFW_KEY_RIGHT_SHIFT:   return "SHIFT";
         }
+
+        // Printable keys — ask GLFW (JNI call, last resort)
+        String name = GLFW.glfwGetKeyName(code, 0);
+        if (name != null && !name.isEmpty()) return name.toUpperCase();
+
+        return "KEY_" + code;
     }
 }

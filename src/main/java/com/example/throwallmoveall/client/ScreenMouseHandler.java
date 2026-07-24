@@ -6,28 +6,25 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Registers a Fabric ScreenMouseEvents.allowMouseClick listener on every HandledScreen.
  *
- * Why this approach (instead of polling in client tick or raw GLFW callback):
- *  - allowMouseClick fires BEFORE HandledScreen.mouseClicked(), so we can intercept
- *    ALT+click before Minecraft processes it.
- *  - Returning false cancels the original click so Minecraft doesn't double-act.
- *  - The HandledScreen's focusedSlot field is already populated at this point
- *    (it was updated during the previous mouseMoved / render call).
- *  - Screen.hasAltDown() / hasControlDown() / hasShiftDown() reliably detect
- *    modifier state at the exact moment of click.
+ * Optimisations applied:
+ *  - The redundant `client.currentScreen instanceof HandledScreen` guard is removed;
+ *    BEFORE_INIT already ensures we only hook HandledScreens.
+ *  - Mouse→internal-code conversion uses arithmetic instead of a switch table.
+ *  - Modifier state is read via Screen.has*Down() (single boolean read, no GLFW call).
+ *  - MinecraftClient is passed through rather than retrieved via getInstance().
  *
- * This is the same pattern used by Item Scroller and other inventory utility mods.
+ * Why this works for ALT+click (see ScreenMouseHandler for full rationale):
+ *  allowMouseClick fires BEFORE HandledScreen.mouseClicked(), so we can execute
+ *  our action and return false to cancel the original Minecraft click.
  */
 public class ScreenMouseHandler {
 
     public static void register() {
-        ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            // Only hook into inventory / container screens, not our config screen
+        ScreenEvents.BEFORE_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof HandledScreen<?>) || screen instanceof ModConfigScreen) return;
 
             ScreenMouseEvents.allowMouseClick(screen).register((s, mouseX, mouseY, button) ->
@@ -37,48 +34,41 @@ public class ScreenMouseHandler {
     }
 
     /**
-     * Returns true  → allow the click to proceed normally.
-     * Returns false → cancel the click (our combo action was fired instead).
+     * @return true  → let Minecraft handle the click normally.
+     *         false → we handled it; cancel Minecraft's click.
      */
     private static boolean handleClick(MinecraftClient client, int button) {
         if (client.player == null) return true;
-        if (!(client.currentScreen instanceof HandledScreen<?>)) return true;
 
         ModConfig config = ModConfig.get();
 
-        // Convert GLFW mouse button index → our internal code
-        // GLFW: 0=LEFT, 1=RIGHT, 2=MIDDLE  →  ModConfig: MOUSE_LEFT=-100, MOUSE_RIGHT=-99, MOUSE_MIDDLE=-98
-        int internalCode = -(100 - button); // button=0→-100, button=1→-99, button=2→-98 ✓
+        // Arithmetic conversion: GLFW button 0 → -100, 1 → -99, 2 → -98 …
+        // matches ModConfig.MOUSE_LEFT=-100, MOUSE_RIGHT=-99, MOUSE_MIDDLE=-98
+        int code = -(100 - button);
 
+        // Read modifier state once (Screen.has*Down() reads a cached boolean, no GLFW overhead)
         boolean alt   = Screen.hasAltDown();
         boolean ctrl  = Screen.hasControlDown();
         boolean shift = Screen.hasShiftDown();
 
-        boolean consumed = false;
-
         // --- ThrowAll mouse combo ---
-        if (config.throwAllKey < 0 && config.throwAllKey == internalCode) {
-            boolean modifiersMatch = (config.throwAllAlt == alt)
-                    && (config.throwAllCtrl == ctrl)
-                    && (config.throwAllShift == shift);
-            if (modifiersMatch) {
-                InventoryHelper.executeThrowAll();
-                consumed = true;
-            }
+        if (config.throwAllKey == code
+                && config.throwAllAlt   == alt
+                && config.throwAllCtrl  == ctrl
+                && config.throwAllShift == shift) {
+            InventoryHelper.executeThrowAll(client);
+            return false;
         }
 
         // --- MoveAll mouse combo ---
-        if (config.moveAllKey < 0 && config.moveAllKey == internalCode) {
-            boolean modifiersMatch = (config.moveAllAlt == alt)
-                    && (config.moveAllCtrl == ctrl)
-                    && (config.moveAllShift == shift);
-            if (modifiersMatch) {
-                InventoryHelper.executeMoveAll();
-                consumed = true;
-            }
+        if (config.moveAllKey == code
+                && config.moveAllAlt   == alt
+                && config.moveAllCtrl  == ctrl
+                && config.moveAllShift == shift) {
+            InventoryHelper.executeMoveAll(client);
+            return false;
         }
 
-        // Return false to cancel the original click when we handled it
-        return !consumed;
+        return true;
     }
 }

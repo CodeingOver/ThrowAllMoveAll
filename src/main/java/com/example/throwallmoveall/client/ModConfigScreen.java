@@ -52,9 +52,16 @@ public class ModConfigScreen extends Screen {
 
     private ButtonWidget throwComboButton;
     private ButtonWidget moveComboButton;
-    /** Keep references to RESET buttons so we can update their active state each frame. */
+    /** Keep references to RESET buttons so we can update their active state. */
     private ButtonWidget throwResetBtn;
     private ButtonWidget moveResetBtn;
+    /**
+     * Cached active-state for the RESET buttons.
+     * Updated in refreshLabels() (on every config change) instead of every render frame,
+     * avoiding repeated isThrowDefault()/isMoveDefault() calculations at 60 fps.
+     */
+    private boolean throwResetActive = false;
+    private boolean moveResetActive  = false;
 
     public ModConfigScreen(Screen parent) {
         super(Text.literal("ThrowAll & MoveAll Configuration"));
@@ -152,6 +159,9 @@ public class ModConfigScreen extends Screen {
                     this.client.setScreen(this.parent);
                 }
         ).dimensions(cx - 55, y3, 110, ROW_H).build());
+
+        // Set initial reset-button active state based on current config
+        refreshLabels();
     }
 
     // ── Mouse capture ─────────────────────────────────────────────────────────
@@ -228,7 +238,7 @@ public class ModConfigScreen extends Screen {
             config.moveAllShift = shift;
         }
         listeningRow = 0;
-        refreshLabels();
+        refreshLabels();   // also updates reset-button active state
     }
 
     private void showModifierPreview(int pressedKey, int mods) {
@@ -249,6 +259,11 @@ public class ModConfigScreen extends Screen {
                 config.getComboDisplayString(config.throwAllKey, config.throwAllAlt, config.throwAllCtrl, config.throwAllShift)));
         moveComboButton.setMessage(Text.literal(
                 config.getComboDisplayString(config.moveAllKey, config.moveAllAlt, config.moveAllCtrl, config.moveAllShift)));
+        // Cache reset-button active state; applied in render() without recalculating
+        throwResetActive = !isThrowDefault(config);
+        moveResetActive  = !isMoveDefault(config);
+        if (throwResetBtn != null) throwResetBtn.active = throwResetActive;
+        if (moveResetBtn  != null) moveResetBtn.active  = moveResetActive;
     }
 
     /**
@@ -287,11 +302,6 @@ public class ModConfigScreen extends Screen {
         int cx        = this.width  / 2;
         int blockLeft = cx - 10;
         int startY    = this.height / 2 - ROW_STRIDE;
-
-        // ── Update RESET button active state each frame ───────────────────
-        ModConfig config = ModConfig.get();
-        this.throwResetBtn.active = !isThrowDefault(config);
-        this.moveResetBtn.active  = !isMoveDefault(config);
 
         // ── Title ─────────────────────────────────────────────────────────
         ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, cx, 18, COLOR_TITLE);
