@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class điểm khởi chạy Client-side của Mod ThrowAll & MoveAll trên Fabric Minecraft 1.20.4.
- * Quản lý cấu hình tệp JSON độc lập (.minecraft/config/throwallmoveall.json) và các phím tổ hợp Combo (Alt+Q, Ctrl+Shift+V...).
+ * Main Client Mod EntryPoint for ThrowAll & MoveAll Mod on Fabric Minecraft 1.20.4.
+ * Manages external JSON config (.minecraft/config/throwallmoveall.json) and combo shortcut listeners.
  */
 public class ThrowAllMoveAllMod implements ClientModInitializer {
     public static final String MOD_ID = "throwallmoveall";
@@ -17,12 +17,12 @@ public class ThrowAllMoveAllMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info("Khoi tao Mod ThrowAll & MoveAll (Minecraft 1.20.4)...");
+        LOGGER.info("Initializing ThrowAll & MoveAll Mod (Minecraft 1.20.4)...");
 
-        // 1. Đọc tệp cấu hình JSON ngoài (.minecraft/config/throwallmoveall.json)
+        // 1. Load external JSON config (.minecraft/config/throwallmoveall.json)
         ModConfig.load();
 
-        // 2. Lắng nghe sự kiện Client Tick để bắt thao tác nhấn phím tắt tổ hợp Combo
+        // 2. Register end client tick event to handle combo key shortcuts
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ComboKeyHandler.checkInput(client);
         });

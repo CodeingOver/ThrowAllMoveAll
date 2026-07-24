@@ -4,13 +4,21 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ---
 
+### [v1.1.1] - 2026-07-24
+
+- **[Sửa lỗi]** Sửa lỗi cảnh báo `broken icon` của Fabric Loader bằng cách re-encode tệp `icon.png` thành định dạng chuẩn 128x128 32-bit ARGB PNG.
+- **[Sửa lỗi]** Khắc phục triệt để lỗi không gán được phím tổ hợp: Tự động nhận diện và cập nhật trạng thái phím bổ trợ (`Alt`, `Ctrl`, `Shift`) khi người dùng nhấn tổ hợp phím (như `Alt + Q`), đồng thời chờ phím chính để hoàn tất gán phím.
+- **[Cập nhật]** Anh hóa (English-ized) toàn bộ giao diện Cài đặt In-Game (`ModConfigScreen`), các nhãn điều khiển, gợi ý hướng dẫn và các chuỗi nhật ký ứng dụng.
+- **[Cập nhật]** Tăng phiên bản chính thức lên `v1.1.1` đồng bộ trên `pom.xml`, `gradle.properties` và `fabric.mod.json`.
+
+---
+
 ### [v1.1.0] - 2026-07-24
 
 - **[Thêm mới]** Tệp cấu hình JSON độc lập bên ngoài (`.minecraft/config/throwallmoveall.json`) hỗ trợ tự động lưu trữ và tùy biến cài đặt phím tắt không phụ thuộc vào menu Controls mặc định.
 - **[Thêm mới]** Hỗ trợ phím tắt tổ hợp Combo phức tạp kết hợp cùng phím bổ trợ Modifier: `Alt + Key` (VD: `Alt + Q`), `Ctrl + Key`, `Shift + Key` hoặc kết hợp nhiều Modifier (`Ctrl + Shift + V`).
 - **[Thêm mới]** Màn hình giao diện cài đặt In-Game `ModConfigScreen` trực quan giúp tùy chỉnh các nút bấm hotkey & bật tắt trạng thái Alt / Ctrl / Shift.
 - **[Thêm mới]** Tích hợp nút Configure trong danh sách Mod Menu của game thông qua `ModMenuApi`.
-- **[Cập nhật]** Tăng phiên bản chính thức lên `v1.1.0` trên `pom.xml`, `gradle.properties` và `fabric.mod.json`.
 
 ---
 
