@@ -1,17 +1,15 @@
 package com.example.throwallmoveall;
 
 import com.example.throwallmoveall.client.ComboKeyHandler;
-import com.example.throwallmoveall.client.MouseComboHandler;
+import com.example.throwallmoveall.client.ScreenMouseHandler;
 import com.example.throwallmoveall.config.ModConfig;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Main Client Mod EntryPoint for ThrowAll & MoveAll Mod on Fabric Minecraft 1.20.4.
- * Manages external JSON config (.minecraft/config/throwallmoveall.json) and combo shortcut listeners.
  */
 public class ThrowAllMoveAllMod implements ClientModInitializer {
     public static final String MOD_ID = "throwallmoveall";
@@ -21,19 +19,16 @@ public class ThrowAllMoveAllMod implements ClientModInitializer {
     public void onInitializeClient() {
         LOGGER.info("Initializing ThrowAll & MoveAll Mod (Minecraft 1.20.4)...");
 
-        // 1. Load external JSON config (.minecraft/config/throwallmoveall.json)
+        // 1. Load external JSON config
         ModConfig.load();
 
-        // 2. Install raw GLFW mouse callback once window is ready.
-        //    This fixes ALT+click combos being consumed by Minecraft's screen system
-        //    before our mod can see them.
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-            MouseComboHandler.install(client);
-            LOGGER.info("MouseComboHandler installed on GLFW window.");
-        });
+        // 2. Register Fabric ScreenMouseEvents handler for mouse-button combos (e.g. ALT + LEFT_CLICK).
+        //    This fires BEFORE HandledScreen.mouseClicked(), allowing us to intercept ALT+click
+        //    and cancel the original click so Minecraft doesn't double-act on it.
+        ScreenMouseHandler.register();
 
-        // 3. Register end client tick event to handle keyboard combo shortcuts only.
-        //    Mouse-button combos are now handled via raw GLFW callback in MouseComboHandler.
+        // 3. Register client tick event for keyboard combos only.
+        //    Mouse-button combos are handled by ScreenMouseHandler.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ComboKeyHandler.checkInput(client);
         });
