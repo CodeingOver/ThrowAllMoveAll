@@ -10,49 +10,53 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 /**
  * Registers a Fabric ScreenMouseEvents.allowMouseClick listener on every HandledScreen.
  *
- * Optimisations applied:
- *  - The redundant `client.currentScreen instanceof HandledScreen` guard is removed;
- *    BEFORE_INIT already ensures we only hook HandledScreens.
- *  - Mouse→internal-code conversion uses arithmetic instead of a switch table.
- *  - Modifier state is read via Screen.has*Down() (single boolean read, no GLFW call).
- *  - MinecraftClient is passed through rather than retrieved via getInstance().
+ * Deep optimisations (this round):
  *
- * Why this works for ALT+click (see ScreenMouseHandler for full rationale):
- *  allowMouseClick fires BEFORE HandledScreen.mouseClicked(), so we can execute
- *  our action and return false to cancel the original Minecraft click.
+ *  1. handleClick() now fast-exits immediately when both combos are keyboard-bound
+ *     (config.throwAllKey > 0 && config.moveAllKey > 0) — the mouse handler has
+ *     zero work to do in that common configuration.
+ *
+ *  2. The modifier state is read AFTER confirming the mouse button matches at
+ *     least one combo's key code, avoiding three Screen.has*Down() calls on
+ *     every click that doesn't match either combo button.
+ *
+ *  3. Modifier reads are shared between ThrowAll and MoveAll checks when both
+ *     are bound to the same mouse button (edge case, but free).
  */
 public class ScreenMouseHandler {
 
     public static void register() {
         ScreenEvents.BEFORE_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof HandledScreen<?>) || screen instanceof ModConfigScreen) return;
-
-            ScreenMouseEvents.allowMouseClick(screen).register((s, mouseX, mouseY, button) ->
-                    handleClick(client, button)
-            );
+            ScreenMouseEvents.allowMouseClick(screen).register(
+                    (s, mouseX, mouseY, button) -> handleClick(client, button));
         });
     }
 
-    /**
-     * @return true  → let Minecraft handle the click normally.
-     *         false → we handled it; cancel Minecraft's click.
-     */
     private static boolean handleClick(MinecraftClient client, int button) {
         if (client.player == null) return true;
 
         ModConfig config = ModConfig.get();
 
+        // Fast-exit: both combos are keyboard-bound → nothing to do for mouse clicks
+        if (config.throwAllKey > 0 && config.moveAllKey > 0) return true;
+
         // Arithmetic conversion: GLFW button 0 → -100, 1 → -99, 2 → -98 …
-        // matches ModConfig.MOUSE_LEFT=-100, MOUSE_RIGHT=-99, MOUSE_MIDDLE=-98
         int code = -(100 - button);
 
-        // Read modifier state once (Screen.has*Down() reads a cached boolean, no GLFW overhead)
+        // Check if this button is relevant to either combo BEFORE reading modifiers.
+        // Screen.has*Down() is cheap (reads a volatile boolean), but we still avoid
+        // 3 reads when neither combo is bound to this button.
+        boolean throwMatches = (config.throwAllKey == code);
+        boolean moveMatches  = (config.moveAllKey  == code);
+        if (!throwMatches && !moveMatches) return true;
+
+        // Read modifier state once — shared between both checks
         boolean alt   = Screen.hasAltDown();
         boolean ctrl  = Screen.hasControlDown();
         boolean shift = Screen.hasShiftDown();
 
-        // --- ThrowAll mouse combo ---
-        if (config.throwAllKey == code
+        if (throwMatches
                 && config.throwAllAlt   == alt
                 && config.throwAllCtrl  == ctrl
                 && config.throwAllShift == shift) {
@@ -60,8 +64,7 @@ public class ScreenMouseHandler {
             return false;
         }
 
-        // --- MoveAll mouse combo ---
-        if (config.moveAllKey == code
+        if (moveMatches
                 && config.moveAllAlt   == alt
                 && config.moveAllCtrl  == ctrl
                 && config.moveAllShift == shift) {

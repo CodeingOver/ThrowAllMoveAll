@@ -4,7 +4,19 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ---
 
+### [v1.4.0] - 2026-07-25
+
+- **[Cập nhật]** Tối ưu hiệu năng tầng sâu (round 2) — zero-overhead trên hot path:
+  - **`InventoryHelper`**: Thay `Field.get()` bằng **`MethodHandle.invoke()`** — sau JIT warm-up biên dịch thành direct field load (~1 ns, không còn reflection overhead); `filterSameSide` loop tách thành 2 nhánh riêng để loại bỏ conditional check mỗi iteration; `syncId` đọc 1 lần trước loop thay vì N lần trong `clickSlot`.
+  - **`ComboKeyHandler`**: Kiểm tra modifier **trước** khi query key state — khi modifier không khớp, bỏ qua 1 GLFW JNI call; Java `||` short-circuit đảm bảo RIGHT_* modifier chỉ query khi LEFT_* = false.
+  - **`ScreenMouseHandler`**: Fast-exit ngay khi cả 2 combo đều bind bàn phím; kiểm tra button code **trước** khi đọc modifier state — tránh 3 `Screen.has*Down()` với click không liên quan; modifier được đọc 1 lần dùng chung cho cả 2 check.
+  - **`ModConfig`**: `getComboDisplayString()` trả thẳng `keyName` khi không có modifier — không tạo `StringBuilder`; thêm F1-F12 vào switch table (O(1) jump table); `volatile INSTANCE` đảm bảo safe publication; `disableHtmlEscaping()` trên GSON; `Integer.toString(-code)` thay string concatenation.
+  - **`ThrowAllMoveAllMod`**: Method reference `ComboKeyHandler::checkInput` thay lambda wrapper — loại bỏ anonymous class allocation lúc đăng ký.
+
+---
+
 ### [v1.3.0] - 2026-07-25
+
 
 - **[Sửa lỗi]** Sửa triệt để lỗi `ALT + LEFT_CLICK` không hoạt động:
   - Thay thế raw GLFW callback (`MouseComboHandler`) bằng **Fabric `ScreenMouseEvents.allowMouseClick`** — chuẩn xác theo cách Item Scroller và các mod tương tự sử dụng.

@@ -27,10 +27,7 @@ public class ThrowAllMoveAllMod implements ClientModInitializer {
         //    and cancel the original click so Minecraft doesn't double-act on it.
         ScreenMouseHandler.register();
 
-        // 3. Register client tick event for keyboard combos only.
-        //    Mouse-button combos are handled by ScreenMouseHandler.
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            ComboKeyHandler.checkInput(client);
-        });
+        // 3. Register client tick event for keyboard combos (method reference — no lambda wrapper).
+        ClientTickEvents.END_CLIENT_TICK.register(ComboKeyHandler::checkInput);
     }
 }
