@@ -22,6 +22,8 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 - **[Sửa lỗi]** Đã sửa lỗi tham chiếu `ModConfigScreen` trong 1.19/1.19.2/1.19.4 bằng closure loại trừ chính xác tệp `common`, và đồng bộ hóa hàm `renderBackground(ctx)` đa phiên bản cho 1.20 và 1.20.1.
 - **[Sửa lỗi]** Sửa định dạng URL tải Gradle Wrapper thành `gradle-9.4.0-bin.zip` (chuẩn 3 chữ số phiên bản của Gradle Server).
 ### [v1.5.0] - 2026-08-03
+- **[Tính năng mới]** Thêm script `build-version.bat <mcVersion>` và lệnh `.\gradlew :versions:<mcVersion>:build`: Cho phép build xuất bản tệp `.jar` cho duy nhất 1 phiên bản Minecraft cụ thể (ví dụ 1.20.4, 1.21.4).
+- **[Tính năng mới]** Thêm script `publish-version.bat <mcVersion>` và lệnh `.\gradlew :versions:<mcVersion>:modrinth`: Cho phép xuất bản đích danh 1 phiên bản Minecraft cụ thể (ví dụ 1.20.4, 1.21.4) lên Modrinth thay vì xuất bản toàn bộ.
 - **[Tính năng mới]** Thêm task Gradle `publishAllModrinth` kết hợp plugin `com.modrinth.minotaur`: Tự động đọc Token từ file `.env` và sử dụng `afterEvaluate` chờ Loom đăng ký task `remapJar` để xuất bản đồng loạt 14 bản build lên Modrinth bằng duy nhất 1 câu lệnh (`.\gradlew publishAllModrinth`).
 - **[Tính năng mới]** Hỗ trợ đầy đủ Chế độ Sáng tạo (Creative Mode Inventory): Tự động giải nén `CreativeSlot` và chuyển đổi sang `player.playerScreenHandler.syncId` kèm ID ô đồ thực tế.
 - **[Sửa lỗi]** Triệt tiêu 100% Bug Dupe trong chế độ Sáng tạo (Creative Mode): Gọi `im.dropCreativeStack(stack)` để Server tạo entity vật phẩm thật rơi trên đất, kết hợp `im.clickCreativeStack(ItemStack.EMPTY, realSlot.id)` để xóa rỗng ô đồ trong kho cá nhân.
