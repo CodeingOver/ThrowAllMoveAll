@@ -21,8 +21,9 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 - **[Cập nhật]** Nâng cấp `fabric-loom` cho subproject 26.1 và 26.2 lên **`1.15-SNAPSHOT`** để hỗ trợ thư viện ASM phân tích lớp bytecode **Java 25** (`major version 69`).
 - **[Sửa lỗi]** Đã sửa lỗi tham chiếu `ModConfigScreen` trong 1.19/1.19.2/1.19.4 bằng closure loại trừ chính xác tệp `common`, và đồng bộ hóa hàm `renderBackground(ctx)` đa phiên bản cho 1.20 và 1.20.1.
 - **[Sửa lỗi]** Sửa định dạng URL tải Gradle Wrapper thành `gradle-9.4.0-bin.zip` (chuẩn 3 chữ số phiên bản của Gradle Server).
-- **[Sửa lỗi]** Ngăn `executeMoveAll` thực thi khi đang hover trên ô mẫu Creative Palette (QUICK_MOVE không có "bên kia" container để chuyển tới trong Creative GUI, có thể gây hành vi không mong muốn).
-- **[Cập nhật]** Tối ưu hiệu năng vòng lặp slot trong Creative Mode: kiểm tra `PlayerInventory` trước, chỉ gọi reflection `CREATIVE_SLOT_HANDLE.invoke()` khi slot có khả năng hợp lệ (bỏ qua 45–90 Palette template slots không cần thiết mỗi lần kích hoạt).
+### [v1.5.0] - 2026-08-03
+- **[Tính năng mới]** Hỗ trợ đầy đủ Chế độ Sáng tạo (Creative Mode Inventory): Tự động giải nén `CreativeSlot` và chuyển đổi sang `player.playerScreenHandler.syncId` kèm ID ô đồ thực tế.
+- **[Sửa lỗi]** Triệt tiêu 100% Bug Dupe trong chế độ Sáng tạo (Creative Mode): Gọi `im.dropCreativeStack(stack)` để Server tạo entity vật phẩm thật rơi trên đất, kết hợp `im.clickCreativeStack(ItemStack.EMPTY, realSlot.id)` để xóa rỗng ô đồ trong kho cá nhân.
 - **[Sửa lỗi]** Khắc phục lỗi `Alt + Q` (ThrowAll) không hoạt động với các ô chỉ có 1 item: Đã đăng ký listener `ScreenKeyboardEvents.allowKeyPress` để chặn và xử lý phím `Alt + Q` **trước khi** hàm `keyPressed` mặc định của Minecraft chạy (ngăn Minecraft ném bớt 1 item làm rỗng ô đồ trước khi vòng lặp ThrowAll kịp xử lý).
 - **[Cập nhật]** Nâng cấp `fabric-loader` lên phiên bản **`0.16.9`** cho tất cả các subproject từ 1.19 đến 1.20.4. Giúp bộ biến đổi mã Mixin/ASM tương thích hoàn toàn khi chạy game trên các môi trường Java đời mới (Java 21 / Java 25).
 - **[Sửa lỗi]** Cấu hình `runClient` tự động sử dụng **JDK 21** (`jdk-21.0.11`) khi chạy game thử nghiệm trên các máy có cài sẵn Java 25 làm mặc định, giải quyết triệt để lỗi crash Mixin (`Unsupported class file major version 69`).

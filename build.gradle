@@ -45,6 +45,8 @@ task buildAll {
         println "  ThrowAll & MoveAll - Collecting output JARs"
         println "==================================================\n"
 
+        delete file('dist')
+
         copy {
             into file('dist')
             versionList.each { ver ->

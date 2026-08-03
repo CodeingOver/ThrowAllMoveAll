@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-version = "1.4.0+mc26.1"
+version = "1.5.0+mc26.1"
 group = 'com.example'
 
 base {
@@ -51,5 +51,5 @@ java {
 
 jar {
     archiveBaseName = "throwallmoveall"
-    archiveVersion  = "1.4.0+mc26.1"
+    archiveVersion  = "1.5.0+mc26.1"
 }
