@@ -1,65 +1,67 @@
-# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.20.4)
+# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.19 → 26.2)
 
-Tài liệu này mô tả chi tiết thiết kế kiến trúc, cấu trúc thành phần, luồng xử lý dữ liệu và các sơ đồ kỹ thuật cho dự án ThrowAll & MoveAll Mod.
+Tài liệu này mô tả chi tiết thiết kế kiến trúc, cấu trúc thành phần, luồng xử lý dữ liệu và các sơ đồ kỹ thuật cho dự án ThrowAll & MoveAll Mod theo mô hình **Multi-Project Gradle**.
 
 ---
 
 ## 1. Tổng quan hệ thống (System Overview)
-Mod được thiết kế là một **Client-side Mod** dành cho Fabric Loader trên Minecraft 1.20.4. Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
+Mod được thiết kế là một **Client-side Mod** đa phiên bản dành cho Fabric Loader trên Minecraft từ 1.19 đến 26.2 (Chaos Cubed). Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
 
 ---
 
 ## 2. Công nghệ sử dụng (Tech Stack)
-- **Ngôn ngữ lập trình:** Java 17.
-- **Build System:** Maven (`pom.xml`) & Gradle (`build.gradle` với Fabric Loom).
-- **Modding Framework:** Fabric Loader (`0.15.7`), Fabric API (`0.97.0+1.20.4`).
-- **Mapping:** Yarn Mappings cho Minecraft 1.20.4.
+- **Ngôn ngữ lập trình:** Java 17 (Era 1: 1.19-1.20.4), Java 21 (Era 2: 1.20.5-1.21.5), Java 25 (Era 3: 26.1-26.2+).
+- **Build System:** Gradle Multi-Project (`settings.gradle` include `common` & 14 subproject `:versions:<ver>`).
+- **Modding Framework:** Fabric Loader & Fabric API tương ứng từng phiên bản Minecraft.
+- **Mapping:**
+  - **Era 1 & Era 2 (1.19 → 1.21.5):** Fabric Yarn Mappings.
+  - **Era 3 (26.1 → 26.2+):** Mojang Official Mappings (`loom.officialMojangMappings()`).
 - **Thư viện đồ họa & Input:** Lightweight Java Game Library (LWJGL3 / GLFW).
 - **Cấu hình & Dữ liệu:** Google Gson (Tệp cấu hình JSON).
-- **Tích hợp:** Mod Menu API (`9.0.0`).
+- **Tích hợp:** Mod Menu API.
 
 ---
 
 ## 3. Cấu trúc thư mục (Folder Structure)
 ```
 d:/CodeJava/ModMinecraft/ThowAllMoveAll/
-├── pom.xml                                   # Cấu hình dự án theo chuẩn Maven POM
-├── build.gradle                              # Cấu hình phụ trợ cho Fabric Loom Toolchain
-├── gradle.properties                         # Khai báo phiên bản Minecraft & Fabric Dependencies
-├── settings.gradle                           # Cấu hình Gradle Root Project
+├── settings.gradle                           # Khai báo bao gồm common & 14 subproject versions
+├── build.gradle                              # File cấu hình tổng (Root Task buildAll & collectJars)
 ├── README.md                                 # Hướng dẫn sử dụng & cài đặt bằng Tiếng Việt
+├── dist/                                     # Thư mục tổng hợp các file .jar đầu ra
 ├── docs/
 │   ├── architecture.md                       # Tài liệu kiến trúc hệ thống
 │   └── CHANGELOG.md                          # Nhật ký thay đổi phiên bản
-└── src/
-    └── main/
-        ├── java/
-        │   └── com/
-        │       └── example/
-        │           └── throwallmoveall/
-        │               ├── ThrowAllMoveAllMod.java    # Client Mod EntryPoint
-        │               ├── config/
-        │               │   └── ModConfig.java         # Quản lý đọc/ghi config.json ngoài
-        │               └── client/
-        │                   ├── ComboKeyHandler.java   # Xử lý bắt phím tổ hợp Combo (Alt/Ctrl/Shift)
-        │                   ├── ModConfigScreen.java   # Giao diện cài đặt GUI In-Game
-        │                   ├── ModMenuIntegration.java# Tích hợp nút Configure vào Mod Menu
-        │                   └── InventoryHelper.java   # Logic tương tác kho đồ Client (Reflection Caching)
-        └── resources/
-            ├── fabric.mod.json              # Metadata cho Fabric Mod Loader
-            └── assets/
-                └── throwallmoveall/
-                    └── lang/                # Tệp dịch ngôn ngữ (en_us.json, vi_vn.json)
+├── common/                                   # Mã nguồn & tài nguyên chung
+│   └── src/main/
+│       ├── java/com/example/throwallmoveall/ # Logic core (ThrowAllMoveAllMod, InventoryHelper, ComboKeyHandler)
+│       └── resources/assets/                 # Assets ngôn ngữ và icon
+└── versions/                                 # Subprojects cấu hình riêng cho từng MC version
+    ├── 1.19/                                 # Legacy Screen API (MatrixStack)
+    ├── 1.19.2/
+    ├── 1.19.4/
+    ├── 1.20/
+    ├── 1.20.1/
+    ├── 1.20.2/
+    ├── 1.20.4/                               # Baseline MC 1.20.4
+    ├── 1.20.6/                               # Era 2 (Java 21)
+    ├── 1.21/
+    ├── 1.21.1/
+    ├── 1.21.4/
+    ├── 1.21.5/
+    ├── 26.1/                                 # Era 3 (Java 25, Mojang Mappings)
+    └── 26.2/                                 # Era 3 (Java 25, Mojang Mappings)
 ```
 
 ---
 
 ## 4. Kiến trúc thành phần (Component Architecture)
+- **Common Module (`common/`):** Chứa toàn bộ core business logic không phụ thuộc phiên bản (`InventoryHelper`, `ComboKeyHandler`, `ScreenMouseHandler`, `ModConfig`, `KeyBindings`).
 - **Client EntryPoint Layer (`ThrowAllMoveAllMod`):** Khởi tạo tệp cấu hình JSON ngoài và đăng ký sự kiện `ClientTickEvents.END_CLIENT_TICK`.
 - **Config Management Layer (`ModConfig`):** Đọc/ghi cài đặt phím tắt tổ hợp Combo tại `.minecraft/config/throwallmoveall.json`.
-- **Combo Key Handler Layer (`ComboKeyHandler`):** Đọc trạng thái GLFW phím chính và các phím Modifier (`Alt`, `Ctrl`, `Shift`) ở mức thấp.
-- **Config GUI Layer (`ModConfigScreen` & `ModMenuIntegration`):** Cung cấp giao diện bấm nút tùy chỉnh phím tắt In-Game và tích hợp Mod Menu API.
-- **Inventory Handler Layer (`InventoryHelper`):** Truy vấn ô kho đồ đang được trỏ chuột bằng Reflection (có caching), áp bộ lọc an toàn và phát lệnh click slot qua `ClientPlayerInteractionManager`.
+- **Combo Key Handler Layer (`ComboKeyHandler` & `ScreenMouseHandler`):** Đọc trạng thái GLFW phím chính và các phím Modifier (`Alt`, `Ctrl`, `Shift`) ở mức thấp.
+- **Config GUI Layer (`ModConfigScreen` & `ModMenuIntegration`):** Cung cấp giao diện bấm nút tùy chỉnh phím tắt In-Game. Bản legacy (1.19.x) dùng `MatrixStack`, bản modern (1.20+) dùng `DrawContext`.
+- **Inventory Handler Layer (`InventoryHelper`):** Truy vấn ô kho đồ đang được trỏ chuột bằng Reflection (có caching `MethodHandle`), áp bộ lọc an toàn và phát lệnh click slot qua `ClientPlayerInteractionManager`.
 
 ---
 
@@ -67,7 +69,7 @@ d:/CodeJava/ModMinecraft/ThowAllMoveAll/
 1. `ThrowAllMoveAllMod` nạp cài đặt từ `.minecraft/config/throwallmoveall.json` thông qua `ModConfig.load()`.
 2. Trong mỗi Client Tick, `ComboKeyHandler` đọc trạng thái phím GLFW thấp và kiểm tra xem phím tổ hợp (VD: `Alt + Q` hoặc `Ctrl + Shift + V`) có được nhấn hay không.
 3. Khi phím tổ hợp hợp lệ được bấm, `InventoryHelper` kiểm tra `client.currentScreen`:
-   - Xác định `Slot` được trỏ chuột bằng Reflection (Cache Field).
+   - Xác định `Slot` được trỏ chuột bằng Reflection (`MethodHandle` cached field).
    - Duyệt danh sách các `Slot` phù hợp trong kho đồ.
 4. Gửi gói tin tương tác `clickSlot` với loại thao tác tương ứng (`QUICK_MOVE` hoặc `THROW`) tới Server.
 
@@ -89,23 +91,27 @@ d:/CodeJava/ModMinecraft/ThowAllMoveAll/
 
 ## 8. Sơ đồ trực quan (Visual Diagrams - Mermaid.js)
 
-### Sơ đồ Luồng Kiến trúc Hệ thống (Flowchart)
+### Sơ đồ Luồng Kiến trúc Multi-Project (Flowchart)
 ```mermaid
 graph TD
-    A["Người chơi nhấn phím tổ hợp (Alt + Q / Ctrl + Shift + V)"] --> B["ComboKeyHandler.checkInput()"]
-    B --> C{"Kiểm tra phím chính & Modifiers (Alt/Ctrl/Shift)"}
-    C -- "Phím ThrowAll hợp lệ" --> D["InventoryHelper.executeThrowAll()"]
-    C -- "Phím MoveAll hợp lệ" --> E["InventoryHelper.executeMoveAll()"]
-    D --> F["Dùng Reflection Cache lấy Hovered Slot"]
-    E --> F
-    F --> G["Lặp qua các Slot chứa Item trùng khớp"]
-    G -- "MoveAll" --> H["clickSlot(SlotActionType.QUICK_MOVE)"]
-    G -- "ThrowAll" --> I["clickSlot(SlotActionType.THROW)"]
-    H --> J["Gửi Packet cập nhật kho đồ tới Server"]
-    I --> J
+    Root["Root Project (build.gradle, settings.gradle)"] --> Common["common/ (Shared Core Logic & Assets)"]
+    Root --> Sub1["versions/1.19 (Legacy Screen, Java 17)"]
+    Root --> Sub2["versions/1.20.4 (Java 17, DrawContext)"]
+    Root --> Sub3["versions/1.21.4 (Java 21, Loom 1.9)"]
+    Root --> Sub4["versions/26.2 (Java 25, Mojang Mappings)"]
+    
+    Sub1 --> Common
+    Sub2 --> Common
+    Sub3 --> Common
+    Sub4 --> Common
+
+    Sub1 --> Jar1["dist/throwallmoveall-1.4.0+mc1.19.jar"]
+    Sub2 --> Jar2["dist/throwallmoveall-1.4.0+mc1.20.4.jar"]
+    Sub3 --> Jar3["dist/throwallmoveall-1.4.0+mc1.21.4.jar"]
+    Sub4 --> Jar4["dist/throwallmoveall-1.4.0+mc26.2.jar"]
 ```
 
-### Sơ đồ Trình tự Thao tác (Sequence Diagram)
+### Sơ đồ Trình tự Thao tác Inventory (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     autonumber
@@ -120,7 +126,7 @@ sequenceDiagram
     CK->>CFG: Đối chiếu cấu hình throwAllKey & Alt/Ctrl/Shift
     CFG-->>CK: Trả về trạng thái hợp lệ
     CK->>IH: Gọi executeThrowAll() / executeMoveAll()
-    IH->>MC: Đọc slot trỏ chuột bằng Reflection (cached Field)
+    IH->>MC: Đọc slot trỏ chuột bằng MethodHandle (cached Field)
     loop Lặp qua từng Slot phù hợp
         IH->>MC: clickSlot(syncId, slotId, button, SlotActionType, player)
         MC->>SVR: Gửi C2SPacket (Player Action Inventory)

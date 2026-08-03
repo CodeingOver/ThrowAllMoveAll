@@ -1,7 +1,38 @@
-/.agents
-/.gradle
-/.vscode
-/bin
-/build
-/build.gradle
-/target
+# ═══════════════════════════════════════════════════════════════════════════
+#  ThrowAll & MoveAll — Git Ignore Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Gradle build directories & caches
+.gradle/
+**/build/
+build/
+bin/
+target/
+out/
+dist/
+
+# Fabric Loom run & cache directories
+**/run/
+run/
+.fabric/
+**/loom-cache/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+*.factorypath
+
+# OS & Log files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# Agent Scratch & Temporary Customizations
+.agents/

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "throwallmoveall",
+  "version": "1.4.0",
+  "name": "ThrowAll & MoveAll Mod",
+  "description": "Utility client mod for Minecraft 26.1 providing fast inventory shortcuts: ThrowAll and MoveAll.",
+  "authors": [ "Developer" ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/throwallmoveall/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [ "com.example.throwallmoveall.ThrowAllMoveAllMod" ],
+    "modmenu": [ "com.example.throwallmoveall.client.ModMenuIntegration" ]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "minecraft": "~26.1",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

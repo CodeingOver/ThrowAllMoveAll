@@ -4,6 +4,29 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ---
 
+### [v1.5.0] - 2026-08-03
+
+- **[Thêm mới]** Hệ thống build đa phiên bản Minecraft trong một project duy nhất:
+  - **`build.gradle`** được thiết kế lại hoàn toàn với **Version Database** nhúng sẵn, hỗ trợ 14 phiên bản từ 1.19 đến 26.2 (Chaos Cubed).
+  - Lệnh build theo version: `./gradlew build -PmcVersion=1.21.4` hoặc `./gradlew buildAll` để build tất cả.
+  - Tự động điều chỉnh: Java version (17 / 21 / 25), Yarn mappings, Fabric API, ModMenu, Fabric Loom phù hợp từng phiên bản.
+  - **Era 3 (26.x):** Tự động chuyển sang `loom.officialMojangMappings()` (Mojang Official Mappings) thay Yarn do game 26.x không còn obfuscation.
+- **[Thêm mới]** `src/legacy/java/` — Thư mục source riêng chứa `ModConfigScreen` phiên bản Legacy cho Minecraft 1.19.x:
+  - Sử dụng API `MatrixStack` (1.19.x) thay vì `DrawContext` (1.20+).
+  - Tự động được áp dụng khi build với `-PmcVersion=1.19`, `-PmcVersion=1.19.2`, `-PmcVersion=1.19.4`.
+- **[Thêm mới]** `fabric.mod.json` template — Tự động inject đúng `minecraft_version`, `java_min`, `loader_min`, `mod_version` vào metadata thông qua Gradle `processResources`.
+- **[Thêm mới]** `scripts/build-all.bat` — Script Windows tự động build tất cả 14 phiên bản, thu thập jar vào `dist/`, hỗ trợ cấu hình `JAVA17_HOME`, `JAVA21_HOME`, `JAVA25_HOME`.
+- **[Thêm mới]** `scripts/create-branches.ps1` — Script PowerShell tham khảo (nếu muốn dùng Git branch per version sau này).
+- **[Thêm mới]** Tích hợp plugin `foojay-resolver-convention` (`0.8.0`) vào `settings.gradle` giúp Gradle tự động nhận diện và chuyển đổi linh hoạt giữa JDK 17, JDK 21 và JDK 25 qua Gradle Toolchains.
+- **[Cập nhật]** Nâng cấp `fabric-loom` cho subproject 26.1 và 26.2 lên **`1.15-SNAPSHOT`** để hỗ trợ thư viện ASM phân tích lớp bytecode **Java 25** (`major version 69`).
+- **[Sửa lỗi]** Đã sửa lỗi tham chiếu `ModConfigScreen` trong 1.19/1.19.2/1.19.4 bằng closure loại trừ chính xác tệp `common`, và đồng bộ hóa hàm `renderBackground(ctx)` đa phiên bản cho 1.20 và 1.20.1.
+- **[Sửa lỗi]** Sửa định dạng URL tải Gradle Wrapper thành `gradle-9.4.0-bin.zip` (chuẩn 3 chữ số phiên bản của Gradle Server).
+- **[Cập nhật]** Đồng bộ hóa phiên bản `fabric-loom`: dùng `1.9-SNAPSHOT` cho subproject 1.19 → 1.21.4, và `1.10-SNAPSHOT` cho 1.21.5, 26.1, 26.2.
+- **[Sửa lỗi]** Chuẩn hóa file `.gitignore` (loại bỏ dòng `/build.gradle` bị nhầm lẫn), bổ sung quy tắc bỏ qua các thư mục sinh ra khi build (`.gradle/`, `build/`, `dist/`, `run/`, `bin/`, `out/`, `.vscode/`, `.idea/`).
+- **[Xóa bỏ]** Dọn dẹp thư mục dư thừa `bin/` ra khỏi dự án.
+
+---
+
 ### [v1.4.0] - 2026-07-25
 
 - **[Cập nhật]** Tối ưu hiệu năng tầng sâu (round 2) — zero-overhead trên hot path:

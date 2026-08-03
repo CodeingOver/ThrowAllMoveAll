@@ -1,0 +1,66 @@
+// ═══════════════════════════════════════════════════════════════════════════
+//  ThrowAll & MoveAll — Root Multi-Project Gradle Build
+//
+//  Subprojects:
+//    - versions:1.19    .. versions:1.19.4   (Era 1 - Java 17, Legacy Screen API)
+//    - versions:1.20    .. versions:1.20.4   (Era 1 - Java 17, DrawContext)
+//    - versions:1.20.6  .. versions:1.21.5   (Era 2 - Java 21, Loom 1.10)
+//    - versions:26.1    .. versions:26.2     (Era 3 - Java 25 / 21 baseline, Loom 1.10)
+// ═══════════════════════════════════════════════════════════════════════════
+
+def versionList = [
+    '1.19', '1.19.2', '1.19.4',
+    '1.20', '1.20.1', '1.20.2', '1.20.4',
+    '1.20.6', '1.21', '1.21.1', '1.21.4', '1.21.5',
+    '26.1', '26.2'
+]
+
+task collectJars(type: Copy) {
+    group = 'build'
+    description = 'Collects output JAR files from all version subprojects into dist/'
+
+    into file('dist')
+
+    versionList.each { ver ->
+        def jarDir = file("versions/${ver}/build/libs")
+        if (jarDir.exists()) {
+            from(jarDir) {
+                include '*.jar'
+                exclude '*-sources.jar'
+            }
+        }
+    }
+}
+
+task buildAll {
+    group = 'build'
+    description = 'Builds all version subprojects natively and collects JARs into dist/'
+
+    versionList.each { ver ->
+        dependsOn ":versions:${ver}:build"
+    }
+
+    doLast {
+        println "\n=================================================="
+        println "  ThrowAll & MoveAll - Collecting output JARs"
+        println "==================================================\n"
+
+        copy {
+            into file('dist')
+            versionList.each { ver ->
+                def jarDir = file("versions/${ver}/build/libs")
+                if (jarDir.exists()) {
+                    from(jarDir) {
+                        include '*.jar'
+                        exclude '*-sources.jar'
+                    }
+                }
+            }
+        }
+
+        def distFiles = file('dist').listFiles()?.findAll { it.name.endsWith('.jar') } ?: []
+        println "SUCCESS! Collected ${distFiles.size()} JAR file(s) into dist/:"
+        distFiles.each { println "  - ${it.name}" }
+        println "==================================================\n"
+    }
+}
