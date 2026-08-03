@@ -16,12 +16,13 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
   - Tự động được áp dụng khi build với `-PmcVersion=1.19`, `-PmcVersion=1.19.2`, `-PmcVersion=1.19.4`.
 - **[Thêm mới]** `fabric.mod.json` template — Tự động inject đúng `minecraft_version`, `java_min`, `loader_min`, `mod_version` vào metadata thông qua Gradle `processResources`.
 - **[Thêm mới]** `scripts/build-all.bat` — Script Windows tự động build tất cả 14 phiên bản, thu thập jar vào `dist/`, hỗ trợ cấu hình `JAVA17_HOME`, `JAVA21_HOME`, `JAVA25_HOME`.
-- **[Thêm mới]** `scripts/create-branches.ps1` — Script PowerShell tham khảo (nếu muốn dùng Git branch per version sau này).
+- **[Thêm mới]** `scripts/test-version.bat` — Script giúp chạy test trực tiếp game (Dev Client) của bất kỳ phiên bản nào chỉ với 1 lệnh đơn giản.
 - **[Thêm mới]** Tích hợp plugin `foojay-resolver-convention` (`0.8.0`) vào `settings.gradle` giúp Gradle tự động nhận diện và chuyển đổi linh hoạt giữa JDK 17, JDK 21 và JDK 25 qua Gradle Toolchains.
 - **[Cập nhật]** Nâng cấp `fabric-loom` cho subproject 26.1 và 26.2 lên **`1.15-SNAPSHOT`** để hỗ trợ thư viện ASM phân tích lớp bytecode **Java 25** (`major version 69`).
 - **[Sửa lỗi]** Đã sửa lỗi tham chiếu `ModConfigScreen` trong 1.19/1.19.2/1.19.4 bằng closure loại trừ chính xác tệp `common`, và đồng bộ hóa hàm `renderBackground(ctx)` đa phiên bản cho 1.20 và 1.20.1.
 - **[Sửa lỗi]** Sửa định dạng URL tải Gradle Wrapper thành `gradle-9.4.0-bin.zip` (chuẩn 3 chữ số phiên bản của Gradle Server).
 - **[Cập nhật]** Đồng bộ hóa phiên bản `fabric-loom`: dùng `1.9-SNAPSHOT` cho subproject 1.19 → 1.21.4, và `1.10-SNAPSHOT` cho 1.21.5, 26.1, 26.2.
+- **[Sửa lỗi]** Đã thêm cấu hình Gradle Toolchains `JavaLanguageVersion.of(17)` cho các phiên bản Minecraft 1.19 đến 1.20.4 để ngăn Gradle tự động chạy game bằng JDK 25 hệ thống gây ra crash Fabric Loader Mixin (`Unsupported class file major version 69`).
 - **[Sửa lỗi]** Chuẩn hóa file `.gitignore` (loại bỏ dòng `/build.gradle` bị nhầm lẫn), bổ sung quy tắc bỏ qua các thư mục sinh ra khi build (`.gradle/`, `build/`, `dist/`, `run/`, `bin/`, `out/`, `.vscode/`, `.idea/`).
 - **[Xóa bỏ]** Dọn dẹp thư mục dư thừa `bin/` ra khỏi dự án.
 
