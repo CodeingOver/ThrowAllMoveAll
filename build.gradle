@@ -8,12 +8,56 @@
 //    - versions:26.1    .. versions:26.2     (Era 3 - Java 25 / 21 baseline, Loom 1.10)
 // ═══════════════════════════════════════════════════════════════════════════
 
+plugins {
+    id "com.modrinth.minotaur" version "2.8.7" apply false
+}
+
 def versionList = [
     '1.19', '1.19.2', '1.19.4',
     '1.20', '1.20.1', '1.20.2', '1.20.4',
     '1.20.6', '1.21', '1.21.1', '1.21.4', '1.21.5',
     '26.1', '26.2'
 ]
+
+def getEnvToken() {
+    def envToken = System.getenv("MODRINTH_TOKEN")
+    if (envToken) return envToken
+
+    def envFile = rootProject.file(".env")
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            line = line.trim()
+            if (line.startsWith("MODRINTH_TOKEN=") && !line.startsWith("#")) {
+                envToken = line.substring("MODRINTH_TOKEN=".length()).trim()
+            }
+        }
+    }
+    return envToken ?: findProperty("modrinthToken") ?: ""
+}
+
+versionList.each { ver ->
+    project(":versions:${ver}") {
+        apply plugin: 'com.modrinth.minotaur'
+
+        afterEvaluate {
+            modrinth {
+                token = getEnvToken()
+                projectId = "throwall-moveall"
+                versionNumber = "1.5.0+mc" + project.name
+                versionName = "ThrowAll & MoveAll 1.5.0 (Minecraft " + project.name + ")"
+                versionType = "release"
+                uploadFile = tasks.named('remapJar')
+                gameVersions = [project.name]
+                loaders = ["fabric"]
+                changelog = """- **[New Feature]** Full Creative Mode Inventory support (`CreativeInventoryScreen`).
+- **[Bug Fix]** Fixed item duplication bug & item drop failure in Creative GUI.
+- **[Bug Fix]** Fixed `Alt + Q` (ThrowAll) shortcut failing when hovering over single-item stacks.
+- **[Optimization]** Optimized slot inspection loops to eliminate redundant reflection calls.
+- **[Compatibility]** Full support for Fabric Loader 0.16.9+ and Java 21 / Java 25."""
+            }
+        }
+    }
+}
 
 task collectJars(type: Copy) {
     group = 'build'
@@ -64,5 +108,14 @@ task buildAll {
         println "SUCCESS! Collected ${distFiles.size()} JAR file(s) into dist/:"
         distFiles.each { println "  - ${it.name}" }
         println "==================================================\n"
+    }
+}
+
+task publishAllModrinth {
+    group = 'publishing'
+    description = 'Publishes all 14 version JARs directly to Modrinth via Minotaur plugin'
+
+    versionList.each { ver ->
+        dependsOn ":versions:${ver}:modrinth"
     }
 }

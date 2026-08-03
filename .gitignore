@@ -33,6 +33,7 @@ run/
 Thumbs.db
 desktop.ini
 *.log
+.env
 
 # Agent Scratch & Temporary Customizations
 .agents/
