@@ -21,8 +21,8 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 - **[Cập nhật]** Nâng cấp `fabric-loom` cho subproject 26.1 và 26.2 lên **`1.15-SNAPSHOT`** để hỗ trợ thư viện ASM phân tích lớp bytecode **Java 25** (`major version 69`).
 - **[Sửa lỗi]** Đã sửa lỗi tham chiếu `ModConfigScreen` trong 1.19/1.19.2/1.19.4 bằng closure loại trừ chính xác tệp `common`, và đồng bộ hóa hàm `renderBackground(ctx)` đa phiên bản cho 1.20 và 1.20.1.
 - **[Sửa lỗi]** Sửa định dạng URL tải Gradle Wrapper thành `gradle-9.4.0-bin.zip` (chuẩn 3 chữ số phiên bản của Gradle Server).
-- **[Cập nhật]** Đồng bộ hóa phiên bản `fabric-loom`: dùng `1.9-SNAPSHOT` cho subproject 1.19 → 1.21.4, và `1.10-SNAPSHOT` cho 1.21.5, 26.1, 26.2.
-- **[Sửa lỗi]** Đã thêm cấu hình Gradle Toolchains `JavaLanguageVersion.of(17)` cho các phiên bản Minecraft 1.19 đến 1.20.4 để ngăn Gradle tự động chạy game bằng JDK 25 hệ thống gây ra crash Fabric Loader Mixin (`Unsupported class file major version 69`).
+- **[Cập nhật]** Nâng cấp `fabric-loader` lên phiên bản **`0.16.9`** cho tất cả các subproject từ 1.19 đến 1.20.4. Giúp bộ biến đổi mã Mixin/ASM tương thích hoàn toàn khi chạy game trên các môi trường Java đời mới (Java 21 / Java 25).
+- **[Sửa lỗi]** Cấu hình `runClient` tự động sử dụng **JDK 21** (`jdk-21.0.11`) khi chạy game thử nghiệm trên các máy có cài sẵn Java 25 làm mặc định, giải quyết triệt để lỗi crash Mixin (`Unsupported class file major version 69`).
 - **[Sửa lỗi]** Chuẩn hóa file `.gitignore` (loại bỏ dòng `/build.gradle` bị nhầm lẫn), bổ sung quy tắc bỏ qua các thư mục sinh ra khi build (`.gradle/`, `build/`, `dist/`, `run/`, `bin/`, `out/`, `.vscode/`, `.idea/`).
 - **[Xóa bỏ]** Dọn dẹp thư mục dư thừa `bin/` ra khỏi dự án.
 

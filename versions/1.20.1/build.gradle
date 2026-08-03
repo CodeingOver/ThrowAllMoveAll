@@ -39,7 +39,7 @@ sourceSets {
 dependencies {
     minecraft "com.mojang:minecraft:1.20.1"
     mappings "net.fabricmc:yarn:1.20.1+build.10:v2"
-    modImplementation "net.fabricmc:fabric-loader:0.15.7"
+    modImplementation "net.fabricmc:fabric-loader:0.16.9"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.2+1.20.1"
     modCompileOnly "com.terraformersmc:modmenu:7.2.2"
 }
@@ -57,4 +57,11 @@ java {
 jar {
     archiveBaseName = "throwallmoveall"
     archiveVersion  = "1.4.0+mc1.20.1"
+}
+
+tasks.named('runClient', JavaExec).configure {
+    def jdk21 = file('C:/Program Files/Java/jdk-21.0.11/bin/java.exe')
+    if (jdk21.exists()) {
+        executable = jdk21
+    }
 }
