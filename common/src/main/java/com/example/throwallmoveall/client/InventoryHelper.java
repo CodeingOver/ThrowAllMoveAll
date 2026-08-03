@@ -1,6 +1,7 @@
 package com.example.throwallmoveall.client;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
@@ -19,51 +20,56 @@ import java.util.List;
 
 /**
  * Client-side inventory action executor for ThrowAll & MoveAll.
- *
- * Deep optimisations (this round):
- *
- *  1. MethodHandle replaces Field.get() for focusedSlot access.
- *     MethodHandle.invokeExact() is JVM-intrinsified — after JIT warm-up it
- *     compiles to a direct field load with zero reflective overhead (~1 ns),
- *     whereas Field.get() always goes through access checks + Object boxing.
- *
- *  2. executeOnMatchingSlots() receives pre-computed booleans from callers
- *     so the slot loop body avoids repeated field reads of `filterSameSide`
- *     and `sourceInPlayerInv` on every iteration.
- *
- *  3. The `slot == null` guard is removed: Minecraft's ScreenHandler.slots is
- *     a non-null-element List (AbstractList backed by an array), so the null
- *     check was dead code that only added branch pressure.
- *
- *  4. Item identity comparison uses reference equality via stack.isOf(item),
- *     which already does `this.item == item` internally — no extra boxing.
- *
- *  5. `syncId` is read once before the loop (single field load vs N loads).
+ * Supports both Survival and Creative mode inventories.
  */
 public class InventoryHelper {
 
-    // ── MethodHandle cache ───────────────────────────────────────────────────
-    /**
-     * MethodHandle pointing at HandledScreen.focusedSlot.
-     * Resolved once at class-load time (or on first call if static init fails).
-     * After JIT compilation this degenerates to a single direct field load.
-     */
+    // ── MethodHandle cache for HandledScreen.focusedSlot ─────────────────────
     private static final MethodHandle FOCUSED_SLOT_HANDLE = resolveFocusedSlotHandle();
 
     private static MethodHandle resolveFocusedSlotHandle() {
         try {
             MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
                     HandledScreen.class, MethodHandles.lookup());
-            // Find the first Field of type Slot in HandledScreen
             for (Field f : HandledScreen.class.getDeclaredFields()) {
                 if (f.getType() == Slot.class) {
                     return lookup.unreflectGetter(f);
                 }
             }
         } catch (Throwable t) {
-            // Logged at usage site; return null so callers can fast-fail
         }
         return null;
+    }
+
+    // ── MethodHandle cache for CreativeInventoryScreen.CreativeSlot.slot ──────
+    private static final MethodHandle CREATIVE_SLOT_HANDLE = resolveCreativeSlotHandle();
+
+    private static MethodHandle resolveCreativeSlotHandle() {
+        try {
+            for (Class<?> inner : CreativeInventoryScreen.class.getDeclaredClasses()) {
+                if (Slot.class.isAssignableFrom(inner)) {
+                    MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(inner, MethodHandles.lookup());
+                    for (Field f : inner.getDeclaredFields()) {
+                        if (f.getType() == Slot.class) {
+                            return lookup.unreflectGetter(f);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+        }
+        return null;
+    }
+
+    private static Slot getRealSlot(Slot slot) {
+        if (CREATIVE_SLOT_HANDLE != null && slot != null) {
+            try {
+                Object obj = CREATIVE_SLOT_HANDLE.invoke(slot);
+                if (obj instanceof Slot s) return s;
+            } catch (Throwable ignored) {
+            }
+        }
+        return slot;
     }
 
     // ── Public entry points ──────────────────────────────────────────────────
@@ -78,9 +84,17 @@ public class InventoryHelper {
         Slot focused = getFocusedSlot(screen);
         if (focused == null || !focused.hasStack() || !focused.canTakeItems(player)) return;
 
-        boolean srcInPlayer = focused.inventory instanceof PlayerInventory;
+        boolean isCreative = screen instanceof CreativeInventoryScreen;
+        Slot realFocused = isCreative ? getRealSlot(focused) : focused;
+        boolean srcInPlayer = realFocused.inventory instanceof PlayerInventory;
+
+        // In Creative Mode, MoveAll only makes sense for slots in the player's own inventory.
+        // Hovering over a Creative Palette tab slot produces srcInPlayer=false and there is
+        // no "other side" container to QUICK_MOVE into, so exit early.
+        if (isCreative && !srcInPlayer) return;
+
         executeOnMatchingSlots(
-                screen.getScreenHandler(), player, im,
+                screen, player, im,
                 focused.getStack().getItem(),
                 /* filterSameSide */ true, srcInPlayer,
                 SlotActionType.QUICK_MOVE, 0);
@@ -97,7 +111,7 @@ public class InventoryHelper {
         if (focused == null || !focused.hasStack() || !focused.canTakeItems(player)) return;
 
         executeOnMatchingSlots(
-                screen.getScreenHandler(), player, im,
+                screen, player, im,
                 focused.getStack().getItem(),
                 /* filterSameSide */ false, false,
                 SlotActionType.THROW, 1);
@@ -106,7 +120,7 @@ public class InventoryHelper {
     // ── Core slot loop ───────────────────────────────────────────────────────
 
     private static void executeOnMatchingSlots(
-            ScreenHandler handler,
+            HandledScreen<?> screen,
             ClientPlayerEntity player,
             ClientPlayerInteractionManager im,
             Item targetItem,
@@ -115,32 +129,48 @@ public class InventoryHelper {
             SlotActionType action,
             int btn) {
 
-        // Read syncId once — avoids one field dereference per clickSlot call
-        int syncId = handler.syncId;
+        ScreenHandler handler = screen.getScreenHandler();
+        boolean isCreative = screen instanceof CreativeInventoryScreen;
+        int syncId = isCreative ? player.playerScreenHandler.syncId : handler.syncId;
         List<Slot> slots = handler.slots;
         int size = slots.size();
 
-        if (filterSameSide) {
-            // MoveAll: only process slots on the SAME side as source
-            for (int i = 0; i < size; i++) {
-                Slot slot = slots.get(i);
-                if (slot.inventory instanceof CraftingResultInventory) continue;
-                if (!slot.canTakeItems(player)) continue;
-                if ((slot.inventory instanceof PlayerInventory) != srcInPlayer) continue;
-                ItemStack stack = slot.getStack();
-                if (!stack.isEmpty() && stack.isOf(targetItem)) {
-                    im.clickSlot(syncId, slot.id, btn, action, player);
-                }
+        for (int i = 0; i < size; i++) {
+            Slot slot = slots.get(i);
+            if (slot.inventory instanceof CraftingResultInventory) continue;
+            if (!slot.canTakeItems(player)) continue;
+
+            // Performance: avoid reflection for non-Creative branches.
+            // In Creative Mode, unwrap CreativeSlot only for PlayerInventory slots.
+            // Non-PlayerInventory Creative Palette slots are skipped before reflection is invoked.
+            Slot realSlot;
+            if (isCreative) {
+                realSlot = getRealSlot(slot);
+                if (realSlot == null) continue;
+                // Skip template palette slots – these are infinite sources that must NOT be clicked.
+                if (!(realSlot.inventory instanceof PlayerInventory)) continue;
+            } else {
+                realSlot = slot;
             }
-        } else {
-            // ThrowAll: process ALL slots
-            for (int i = 0; i < size; i++) {
-                Slot slot = slots.get(i);
-                if (slot.inventory instanceof CraftingResultInventory) continue;
-                if (!slot.canTakeItems(player)) continue;
-                ItemStack stack = slot.getStack();
-                if (!stack.isEmpty() && stack.isOf(targetItem)) {
-                    im.clickSlot(syncId, slot.id, btn, action, player);
+
+            if (filterSameSide && ((realSlot.inventory instanceof PlayerInventory) != srcInPlayer)) {
+                continue;
+            }
+
+            ItemStack stack = slot.getStack();
+            if (!stack.isEmpty() && stack.isOf(targetItem)) {
+                if (isCreative) {
+                    if (action == SlotActionType.THROW) {
+                        im.dropCreativeStack(stack.copy());
+                        slot.setStack(ItemStack.EMPTY);
+                        im.clickCreativeStack(ItemStack.EMPTY, realSlot.id);
+                    } else {
+                        im.clickSlot(syncId, realSlot.id, btn, action, player);
+                        slot.setStack(ItemStack.EMPTY);
+                        im.clickCreativeStack(ItemStack.EMPTY, realSlot.id);
+                    }
+                } else {
+                    im.clickSlot(syncId, realSlot.id, btn, action, player);
                 }
             }
         }
@@ -151,7 +181,6 @@ public class InventoryHelper {
     private static Slot getFocusedSlot(HandledScreen<?> screen) {
         if (FOCUSED_SLOT_HANDLE == null) return null;
         try {
-            // invokeExact is JIT-intrinsified → direct field load after warm-up
             return (Slot) FOCUSED_SLOT_HANDLE.invoke(screen);
         } catch (Throwable t) {
             return null;
