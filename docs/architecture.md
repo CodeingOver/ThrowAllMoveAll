@@ -1,21 +1,19 @@
-# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.19 → 26.2)
+# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.19 → 1.21.5)
 
 Tài liệu này mô tả chi tiết thiết kế kiến trúc, cấu trúc thành phần, luồng xử lý dữ liệu và các sơ đồ kỹ thuật cho dự án ThrowAll & MoveAll Mod theo mô hình **Multi-Project Gradle**.
 
 ---
 
 ## 1. Tổng quan hệ thống (System Overview)
-Mod được thiết kế là một **Client-side Mod** đa phiên bản dành cho Fabric Loader trên Minecraft từ 1.19 đến 26.2 (Chaos Cubed). Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
+Mod được thiết kế là một **Client-side Mod** đa phiên bản dành cho Fabric Loader trên Minecraft từ 1.19 đến 1.21.5. Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
 
 ---
 
 ## 2. Công nghệ sử dụng (Tech Stack)
-- **Ngôn ngữ lập trình:** Java 17 (Era 1: 1.19-1.20.4), Java 21 (Era 2: 1.20.5-1.21.5), Java 25 (Era 3: 26.1-26.2+).
-- **Build System:** Gradle Multi-Project (`settings.gradle` include `common` & 14 subproject `:versions:<ver>`).
+- **Ngôn ngữ lập trình:** Java 17 (Era 1: 1.19-1.20.4), Java 21 (Era 2: 1.20.5-1.21.5).
+- **Build System:** Gradle Multi-Project (`settings.gradle` include `common` & 12 subproject `:versions:<ver>`).
 - **Modding Framework:** Fabric Loader & Fabric API tương ứng từng phiên bản Minecraft.
-- **Mapping:**
-  - **Era 1 & Era 2 (1.19 → 1.21.5):** Fabric Yarn Mappings.
-  - **Era 3 (26.1 → 26.2+):** Mojang Official Mappings (`loom.officialMojangMappings()`).
+- **Mapping:** Fabric Yarn Mappings (1.19 → 1.21.5).
 - **Thư viện đồ họa & Input:** Lightweight Java Game Library (LWJGL3 / GLFW).
 - **Cấu hình & Dữ liệu:** Google Gson (Tệp cấu hình JSON).
 - **Tích hợp:** Mod Menu API.
@@ -24,8 +22,8 @@ Mod được thiết kế là một **Client-side Mod** đa phiên bản dành c
 
 ## 3. Cấu trúc thư mục (Folder Structure)
 ```
-d:/CodeJava/ModMinecraft/ThowAllMoveAll/
-├── settings.gradle                           # Khai báo bao gồm common & 14 subproject versions
+throwallmoveall/
+├── settings.gradle                           # Khai báo bao gồm common & 12 subproject versions
 ├── build.gradle                              # File cấu hình tổng (Root Task buildAll & collectJars)
 ├── README.md                                 # Hướng dẫn sử dụng & cài đặt bằng Tiếng Việt
 ├── dist/                                     # Thư mục tổng hợp các file .jar đầu ra
@@ -48,9 +46,7 @@ d:/CodeJava/ModMinecraft/ThowAllMoveAll/
     ├── 1.21/
     ├── 1.21.1/
     ├── 1.21.4/
-    ├── 1.21.5/
-    ├── 26.1/                                 # Era 3 (Java 25, Mojang Mappings)
-    └── 26.2/                                 # Era 3 (Java 25, Mojang Mappings)
+    └── 1.21.5/
 ```
 
 ---
@@ -97,18 +93,18 @@ graph TD
     Root["Root Project (build.gradle, settings.gradle)"] --> Common["common/ (Shared Core Logic & Assets)"]
     Root --> Sub1["versions/1.19 (Legacy Screen, Java 17)"]
     Root --> Sub2["versions/1.20.4 (Java 17, DrawContext)"]
-    Root --> Sub3["versions/1.21.4 (Java 21, Loom 1.9)"]
-    Root --> Sub4["versions/26.2 (Java 25, Mojang Mappings)"]
+    Root --> Sub3["versions/1.21.4 (Java 21, Loom 1.10)"]
+    Root --> Sub4["versions/1.21.5 (Java 21, Fabric API)"]
     
     Sub1 --> Common
     Sub2 --> Common
     Sub3 --> Common
     Sub4 --> Common
 
-    Sub1 --> Jar1["dist/throwallmoveall-1.4.0+mc1.19.jar"]
-    Sub2 --> Jar2["dist/throwallmoveall-1.4.0+mc1.20.4.jar"]
-    Sub3 --> Jar3["dist/throwallmoveall-1.4.0+mc1.21.4.jar"]
-    Sub4 --> Jar4["dist/throwallmoveall-1.4.0+mc26.2.jar"]
+    Sub1 --> Jar1["dist/throwallmoveall-1.5.1-mc1.19.jar"]
+    Sub2 --> Jar2["dist/throwallmoveall-1.5.1-mc1.20.4.jar"]
+    Sub3 --> Jar3["dist/throwallmoveall-1.5.1-mc1.21.4.jar"]
+    Sub4 --> Jar4["dist/throwallmoveall-1.5.1-mc1.21.5.jar"]
 ```
 
 ### Sơ đồ Trình tự Thao tác Inventory (Sequence Diagram)
