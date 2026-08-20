@@ -48,3 +48,10 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+tasks.named('runClient', JavaExec).configure {
+    def jdk21 = file('C:/Program Files/Java/jdk-21.0.11/bin/java.exe')
+    if (jdk21.exists()) {
+        executable = jdk21
+    }
+}

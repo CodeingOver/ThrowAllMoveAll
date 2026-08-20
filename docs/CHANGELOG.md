@@ -8,9 +8,13 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
   - Chuẩn hóa tên tệp JAR đầu ra theo định dạng SemVer được Modrinth khuyến nghị: `throwallmoveall-1.5.1-mc<ver>.jar` (loại bỏ hoàn toàn tiền tố lặp chuỗi `mc` và ký tự `+` gây lỗi Regex parser).
   - Loại bỏ các cấu hình `jar` ghi đè cục bộ trong các subproject cũ nhằm đảm bảo quy trình đóng gói qua Fabric Loom kế thừa chuẩn xác `base.archivesName` và `project.version`.
   - Khắc phục thứ tự thực thi của task `collectJars` với thuộc tính `mustRunAfter`, đảm bảo tệp JAR chỉ được thu thập sau khi task `remapJar` hoàn thành.
-- **[Cập nhật]** Chuẩn hóa toàn bộ 14 tệp cấu hình siêu dữ liệu `fabric.mod.json`:
-  - Đồng bộ trường `depends.minecraft` sang phiên bản đích danh rõ ràng (`"minecraft": "1.20.1"`, `"1.21.4"`...) thay cho toán tử tilde (`~`), giúp Modrinth auto-fill chính xác 100% mục Minecraft Game Version khi upload file trực tiếp trên Web.
-  - Cập nhật phiên bản hiển thị `version: 1.5.1` đồng nhất trên tất cả 14 subproject và cấu hình dự án gốc `gradle.properties`.
+- **[Sửa lỗi]** Sửa lỗi crash / không khởi động được game trên Minecraft 26.1 và 26.2:
+  - Hạ mức ràng buộc `fabricloader` từ `>=0.17.0` về chuẩn thực tế `>=0.16.0`, ngăn Fabric Loader chặn game khi nạp mod.
+  - Hạ mức ràng buộc `java` từ `>=25` về `>=21`, tương thích hoàn hảo cả trên môi trường chạy Java 21 lẫn Java 25.
+  - Điều chỉnh `minecraft` trong `fabric.mod.json` thành khoảng tương thích (`>=1.21.5 <=26.1` và `>=1.21.5 <=26.2`), cho phép mod vừa chạy được trên dev client vừa tương thích với phiên bản launcher.
+- **[Cập nhật]** Tạm dừng biên dịch và xuất bản cho 2 subproject `26.1` và `26.2`:
+  - Loại bỏ tạm thời `26.1` và `26.2` khỏi `settings.gradle` và `build.gradle` trong khi chờ Mojang và Fabric phát hành các gói thư viện Maven / Mapping chính thức.
+  - Dự án tập trung phát hành và hỗ trợ ổn định 12 phiên bản chính thức từ `1.19` đến `1.21.5`.
 
 ---
 

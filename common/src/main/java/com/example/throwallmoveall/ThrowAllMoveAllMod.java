@@ -17,7 +17,7 @@ public class ThrowAllMoveAllMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info("Initializing ThrowAll & MoveAll Mod (Minecraft 1.20.4)...");
+        LOGGER.info("Initializing ThrowAll & MoveAll Mod v1.5.1...");
 
         // 1. Load external JSON config
         ModConfig.load();

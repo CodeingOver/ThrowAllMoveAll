@@ -17,7 +17,7 @@ echo Representative versions to test:
 echo   1.19.4  -- Era 1 (Legacy MatrixStack ^& ButtonWidget)
 echo   1.20.1  -- Era 2 (DrawContext 1-arg renderBackground)
 echo   1.21.4  -- Era 3 (DrawContext 4-arg renderBackground)
-echo   26.1    -- Era 4 (Mojang Mappings)
+echo   1.21.5  -- Era 3 (Modern Fabric API)
 echo.
 echo Examples:
 echo   .\scripts\test-version.bat 1.20.1

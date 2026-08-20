@@ -16,8 +16,8 @@ rootProject.name = 'throwallmoveall'
 def versions = [
     '1.19', '1.19.2', '1.19.4',
     '1.20', '1.20.1', '1.20.2', '1.20.4', '1.20.6',
-    '1.21', '1.21.1', '1.21.4', '1.21.5',
-    '26.1', '26.2'
+    '1.21', '1.21.1', '1.21.4', '1.21.5'
+    // '26.1', '26.2' // Tạm dừng cho đến khi Mojang/Fabric phát hành artifact Maven chính thức
 ]
 
 versions.each { ver ->
