@@ -3,11 +3,11 @@ plugins {
     id 'maven-publish'
 }
 
-version = "1.5.0+mc1.21.1"
+version = "1.5.1-mc1.21.1"
 group = 'com.example'
 
 base {
-    archivesName = "throwallmoveall-mc1.21.1"
+    archivesName = "throwallmoveall"
 }
 
 repositories {
@@ -47,9 +47,4 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-jar {
-    archiveBaseName = "throwallmoveall"
-    archiveVersion  = "1.5.0+mc1.21.1"
 }

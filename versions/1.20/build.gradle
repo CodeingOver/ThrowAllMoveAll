@@ -3,11 +3,11 @@ plugins {
     id 'maven-publish'
 }
 
-version = "1.5.0+mc1.20"
+version = "1.5.1-mc1.20"
 group = 'com.example'
 
 base {
-    archivesName = "throwallmoveall-mc1.20"
+    archivesName = "throwallmoveall"
 }
 
 repositories {
@@ -52,11 +52,6 @@ java {
     withSourcesJar()
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-}
-
-jar {
-    archiveBaseName = "throwallmoveall"
-    archiveVersion  = "1.4.0+mc1.20"
 }
 
 tasks.named('runClient', JavaExec).configure {

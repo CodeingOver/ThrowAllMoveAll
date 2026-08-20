@@ -19,6 +19,13 @@ def versionList = [
     '26.1', '26.2'
 ]
 
+// Exclude unstable 26.1 and 26.2 from Modrinth publication
+def modrinthPublishVersions = [
+    '1.19', '1.19.2', '1.19.4',
+    '1.20', '1.20.1', '1.20.2', '1.20.4',
+    '1.20.6', '1.21', '1.21.1', '1.21.4', '1.21.5'
+]
+
 def getEnvToken() {
     def envToken = System.getenv("MODRINTH_TOKEN")
     if (envToken) return envToken
@@ -35,7 +42,7 @@ def getEnvToken() {
     return envToken ?: findProperty("modrinthToken") ?: ""
 }
 
-versionList.each { ver ->
+modrinthPublishVersions.each { ver ->
     project(":versions:${ver}") {
         apply plugin: 'com.modrinth.minotaur'
 
@@ -43,34 +50,37 @@ versionList.each { ver ->
             modrinth {
                 token = getEnvToken()
                 projectId = "throwall-moveall"
-                versionNumber = "1.5.0+mc" + project.name
-                versionName = "ThrowAll & MoveAll 1.5.0 (Minecraft " + project.name + ")"
+                versionNumber = "1.5.1-mc" + project.name
+                versionName = "ThrowAll & MoveAll 1.5.1 (Minecraft " + project.name + ")"
                 versionType = "release"
                 uploadFile = tasks.named('remapJar')
                 gameVersions = [project.name]
                 loaders = ["fabric"]
-                changelog = """- **[New Feature]** Full Creative Mode Inventory support (`CreativeInventoryScreen`).
-- **[Bug Fix]** Fixed item duplication bug & item drop failure in Creative GUI.
-- **[Bug Fix]** Fixed `Alt + Q` (ThrowAll) shortcut failing when hovering over single-item stacks.
-- **[Optimization]** Optimized slot inspection loops to eliminate redundant reflection calls.
-- **[Compatibility]** Full support for Fabric Loader 0.16.9+ and Java 21 / Java 25."""
+                changelog = """- Fixed automatic Minecraft game version detection and metadata compatibility on Modrinth.
+- Standardized mod file naming and packaging across all supported versions (1.19 to 1.21.5)."""
             }
         }
     }
 }
 
-task collectJars(type: Copy) {
+task collectJars {
     group = 'build'
     description = 'Collects output JAR files from all version subprojects into dist/'
 
-    into file('dist')
+    mustRunAfter versionList.collect { ":versions:${it}:build" }
+    mustRunAfter versionList.collect { ":versions:${it}:remapJar" }
 
-    versionList.each { ver ->
-        def jarDir = file("versions/${ver}/build/libs")
-        if (jarDir.exists()) {
-            from(jarDir) {
-                include '*.jar'
-                exclude '*-sources.jar'
+    doLast {
+        versionList.each { ver ->
+            def subProject = project(":versions:${ver}")
+            def jarDir = file("versions/${ver}/build/libs")
+            if (jarDir.exists()) {
+                copy {
+                    into file('dist')
+                    from(jarDir) {
+                        include "${subProject.base.archivesName.get()}-${subProject.version}.jar"
+                    }
+                }
             }
         }
     }
@@ -91,14 +101,14 @@ task buildAll {
 
         delete file('dist')
 
-        copy {
-            into file('dist')
-            versionList.each { ver ->
-                def jarDir = file("versions/${ver}/build/libs")
-                if (jarDir.exists()) {
+        versionList.each { ver ->
+            def subProject = project(":versions:${ver}")
+            def jarDir = file("versions/${ver}/build/libs")
+            if (jarDir.exists()) {
+                copy {
+                    into file('dist')
                     from(jarDir) {
-                        include '*.jar'
-                        exclude '*-sources.jar'
+                        include "${subProject.base.archivesName.get()}-${subProject.version}.jar"
                     }
                 }
             }
@@ -113,9 +123,9 @@ task buildAll {
 
 task publishAllModrinth {
     group = 'publishing'
-    description = 'Publishes all 14 version JARs directly to Modrinth via Minotaur plugin'
+    description = 'Publishes 12 stable version JARs (1.19 to 1.21.5) directly to Modrinth via Minotaur plugin'
 
-    versionList.each { ver ->
+    modrinthPublishVersions.each { ver ->
         dependsOn ":versions:${ver}:modrinth"
     }
 }
