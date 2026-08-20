@@ -75,7 +75,7 @@ Tất cả các file `.jar` hoàn chỉnh của 14 phiên bản sẽ được t�
 ## 5. Cấu trúc Multi-Project Gradle
 
 ```text
-d:\CodeJava\ModMinecraft\ThowAllMoveAll\
+throwallmoveall/
 ├── common/                  # Mã nguồn dùng chung không phụ thuộc phiên bản
 │   ├── src/main/java/       # Core logic (InventoryHelper, KeyHandlers, ModConfig)
 │   └── src/main/resources/  # Assets chung (icons, lang files)
