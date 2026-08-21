@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "throwallmoveall",
+  "version": "${version}",
+  "name": "ThrowAll & MoveAll",
+  "description": "Nhanh chong vut toan bo hoac di chuyen toan bo vat pham trong ruong",
+  "authors": [
+    "Author"
+  ],
+  "contact": {
+    "homepage": "https://example.com/",
+    "sources": "https://github.com/example/throwallmoveall"
+  },
+  "license": "MIT",
+  "icon": "assets/throwallmoveall/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [ "com.example.throwallmoveall.ThrowAllMoveAllMod" ],
+    "modmenu": [ "com.example.throwallmoveall.client.ModMenuIntegration" ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.6",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}

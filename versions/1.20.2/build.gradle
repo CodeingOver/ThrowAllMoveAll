@@ -1,9 +1,9 @@
 plugins {
-    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'fabric-loom' version '1.14-SNAPSHOT'
     id 'maven-publish'
 }
 
-version = "1.5.1-mc1.20.2"
+version = "1.6.0-mc1.20.2"
 group = 'com.example'
 
 base {

@@ -1,19 +1,19 @@
-# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.19 → 1.21.5)
+# Kiến trúc Hệ thống Mod ThrowAll & MoveAll (Minecraft 1.19 → 1.21.11)
 
 Tài liệu này mô tả chi tiết thiết kế kiến trúc, cấu trúc thành phần, luồng xử lý dữ liệu và các sơ đồ kỹ thuật cho dự án ThrowAll & MoveAll Mod theo mô hình **Multi-Project Gradle**.
 
 ---
 
 ## 1. Tổng quan hệ thống (System Overview)
-Mod được thiết kế là một **Client-side Mod** đa phiên bản dành cho Fabric Loader trên Minecraft từ 1.19 đến 1.21.5. Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
+Mod được thiết kế là một **Client-side Mod** đa phiên bản dành cho Fabric Loader trên Minecraft từ 1.19 đến 1.21.11 (18 phiên bản chính thức). Mod xử lý các gói tin tương tác kho đồ trực tiếp tại client thông qua `ClientPlayerInteractionManager` nhằm giúp người chơi di chuyển (`MoveAll`) hoặc vứt (`ThrowAll`) toàn bộ vật phẩm trong kho một cách nhanh chóng. Hỗ trợ hệ thống **Config JSON ngoài** (`.minecraft/config/throwallmoveall.json`), phím tắt tổ hợp **Combo Keys** (`Alt + Key`, `Ctrl + Shift + Key`...) và tích hợp giao diện **ModMenu Config GUI**.
 
 ---
 
 ## 2. Công nghệ sử dụng (Tech Stack)
-- **Ngôn ngữ lập trình:** Java 17 (Era 1: 1.19-1.20.4), Java 21 (Era 2: 1.20.5-1.21.5).
-- **Build System:** Gradle Multi-Project (`settings.gradle` include `common` & 12 subproject `:versions:<ver>`).
+- **Ngôn ngữ lập trình:** Java 17 (Era 1: 1.19-1.20.4), Java 21 (Era 2: 1.20.5-1.21.11).
+- **Build System:** Gradle Multi-Project (`settings.gradle` include `common` & 18 subproject `:versions:<ver>`).
 - **Modding Framework:** Fabric Loader & Fabric API tương ứng từng phiên bản Minecraft.
-- **Mapping:** Fabric Yarn Mappings (1.19 → 1.21.5).
+- **Mapping:** Fabric Yarn Mappings (1.19 → 1.21.11).
 - **Thư viện đồ họa & Input:** Lightweight Java Game Library (LWJGL3 / GLFW).
 - **Cấu hình & Dữ liệu:** Google Gson (Tệp cấu hình JSON).
 - **Tích hợp:** Mod Menu API.
@@ -23,30 +23,20 @@ Mod được thiết kế là một **Client-side Mod** đa phiên bản dành c
 ## 3. Cấu trúc thư mục (Folder Structure)
 ```
 throwallmoveall/
-├── settings.gradle                           # Khai báo bao gồm common & 12 subproject versions
+├── settings.gradle                           # Khai báo bao gồm 18 subproject versions
 ├── build.gradle                              # File cấu hình tổng (Root Task buildAll & collectJars)
 ├── README.md                                 # Hướng dẫn sử dụng & cài đặt bằng Tiếng Việt
-├── dist/                                     # Thư mục tổng hợp các file .jar đầu ra
+├── dist/                                     # Thư mục tổng hợp các file .jar đầu ra (18 files)
 ├── docs/
 │   ├── architecture.md                       # Tài liệu kiến trúc hệ thống
 │   └── CHANGELOG.md                          # Nhật ký thay đổi phiên bản
-├── common/                                   # Mã nguồn & tài nguyên chung
+├── common/                                   # Mã nguồn & tài nguyên chung (1.19 → 1.21.8)
 │   └── src/main/
-│       ├── java/com/example/throwallmoveall/ # Logic core (ThrowAllMoveAllMod, InventoryHelper, ComboKeyHandler)
+│       ├── java/com/example/throwallmoveall/ # Logic core nguyên bản
 │       └── resources/assets/                 # Assets ngôn ngữ và icon
 └── versions/                                 # Subprojects cấu hình riêng cho từng MC version
-    ├── 1.19/                                 # Legacy Screen API (MatrixStack)
-    ├── 1.19.2/
-    ├── 1.19.4/
-    ├── 1.20/
-    ├── 1.20.1/
-    ├── 1.20.2/
-    ├── 1.20.4/                               # Baseline MC 1.20.4
-    ├── 1.20.6/                               # Era 2 (Java 21)
-    ├── 1.21/
-    ├── 1.21.1/
-    ├── 1.21.4/
-    └── 1.21.5/
+    ├── 1.19/ .. 1.21.8/                      # Kế thừa common/src/main/java
+    └── 1.21.9/ .. 1.21.11/                   # Có thư mục src/main/java riêng (API Click/KeyInput mới)
 ```
 
 ---
