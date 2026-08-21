@@ -2,7 +2,7 @@
 
 Tất cả những thay đổi quan trọng của dự án Mod Minecraft **ThrowAll & MoveAll** sẽ được ghi nhận tại tài liệu này.
 
-### [v1.6.0] - 2026-08-21
+### [v1.5.2] - 2026-08-21
 
 - **[Thêm mới]** Bổ sung hoàn chỉnh các phiên bản Minecraft mới:
   - **Nhóm 1.21.6, 1.21.7, 1.21.8:** Tương thích với API giao diện, sở hữu mã nguồn riêng xử lý an toàn Background Rendering.

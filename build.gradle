@@ -63,13 +63,14 @@ modrinthPublishVersions.each { ver ->
             modrinth {
                 token = getEnvToken()
                 projectId = "throwall-moveall"
-                versionNumber = "1.6.0-mc" + project.name
-                versionName = "ThrowAll & MoveAll 1.6.0 (Minecraft " + project.name + ")"
+                versionNumber = "1.5.2-mc" + project.name
+                versionName = "ThrowAll & MoveAll 1.5.2 (Minecraft " + project.name + ")"
                 versionType = "release"
                 uploadFile = tasks.findByName('remapJar') ?: tasks.named('jar')
                 gameVersions = [project.name]
                 loaders = ["fabric"]
                 changelog = """- Added full support for Minecraft 1.21.6 through 26.2.
+- Fixed Creative Mode slot drop limit in 1.20.4.
 - Standardized multi-project build toolchain."""
             }
         }
