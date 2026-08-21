@@ -18,6 +18,9 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
   - Cập nhật đúng signature của Fabric Screen API v1 cho các sự kiện bàn phím/chuột (`ScreenKeyboardEvents.AllowKeyPress` với `(Screen, KeyInput)` và `ScreenMouseEvents.AllowMouseClick` với `(Screen, Click)`).
   - Nâng cấp đồng bộ phiên bản Fabric API chính thức cho các subproject `1.21.9` (`0.134.1`), `1.21.10` (`0.138.4`), `1.21.11` (`0.141.3`).
   - Thực hiện clean build toàn diện đảm bảo đóng gói đầy đủ 100% các tệp `.class` vào file JAR đầu ra.
+- **[Sửa lỗi]** Khắc phục lỗi ném thiếu vật phẩm trong chế độ Sáng tạo (Creative Mode) cho Minecraft 1.20.4:
+  - Tách thư mục mã nguồn riêng `versions/1.20.4/src/main/java` để xử lý độc lập mà không ảnh hưởng tới `common/`.
+  - Quét trực tiếp toàn bộ 36 ô kho đồ thực tế trong `player.playerScreenHandler.slots` (bao gồm 27 ô túi đồ chính và 9 ô Hotbar) thay vì chỉ duyệt các ô hiển thị trên giao diện tab Creative, đảm bảo ném sạch 100% tất cả các stack vật phẩm cùng loại ở mọi tab.
 - **[Sửa lỗi]** Khắc phục lỗi crash `NoClassDefFoundError: net/minecraft/class_437` và `class_310` trên Minecraft 26.1 / 26.2 bằng cách biên dịch trực tiếp với official Mojang jars và Java 25.
 - **[Cập nhật]** Đồng nhất toàn bộ hệ thống Gradle Multi-Project sang **Fabric Loom `1.14-SNAPSHOT`**, giải quyết dứt điểm xung đột Classloader giữa các subproject trong quy trình build.
 - **[Cập nhật]** Đảm bảo nguyên tắc bảo toàn mã nguồn dùng chung: Thư mục `common/` được giữ nguyên 100% ở trạng thái gốc, không bị biến đổi bởi các thay đổi API của những phiên bản đời sau.

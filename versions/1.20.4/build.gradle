@@ -19,7 +19,7 @@ repositories {
 sourceSets {
     main {
         java {
-            srcDirs = [rootProject.file('common/src/main/java')]
+            srcDirs = ['src/main/java']
         }
         resources {
             srcDirs = [
