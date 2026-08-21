@@ -4,18 +4,24 @@ Tất cả những thay đổi quan trọng của dự án Mod Minecraft **Throw
 
 ### [v1.6.0] - 2026-08-21
 
-- **[Thêm mới]** Bổ sung hoàn chỉnh 6 phiên bản Minecraft mới từ `1.21.6` đến `1.21.11`:
+- **[Thêm mới]** Bổ sung hoàn chỉnh các phiên bản Minecraft mới:
   - **Nhóm 1.21.6, 1.21.7, 1.21.8:** Tương thích với API giao diện, sở hữu mã nguồn riêng xử lý an toàn Background Rendering.
   - **Nhóm 1.21.9, 1.21.10, 1.21.11:** Sở hữu thư mục source riêng (`versions/<ver>/src/main/java`) tương thích hoàn hảo với các breaking changes lớn từ Mojang và Fabric API (bao gồm đối tượng `Click`, `KeyInput` và `KeyBinding.Category.create`).
+  - **Nhóm Minecraft 26.1 & 26.2:** Chuyển đổi mã nguồn hoàn chỉnh sang chuẩn **Unobfuscated Mojang Official Mappings** chạy trực tiếp trên nền tảng **Java 25 (Major version 69)**:
+    - Bỏ qua Fabric Intermediary mapping do Mojang không còn obfuscate mã nguồn kể từ phiên bản 26.1.
+    - Chuyển đổi toàn bộ định danh sang chuẩn Mojang: `Minecraft`, `AbstractContainerScreen`, `ContainerInput`, `Button`, `Component`, `Identifier`, `KeyEvent`, `MouseButtonEvent`.
+    - Thích ứng với kiến trúc GUI mới trong Minecraft 26.2 (`client.gui.screen()` và `client.gui.setScreen()`).
+    - Nâng tổng số phiên bản được hỗ trợ lên **20 phiên bản Minecraft** (`1.19` đến `26.2`).
 - **[Sửa lỗi]** Khắc phục lỗi crash `IllegalStateException: Can only blur once per frame` khi mở giao diện cấu hình Mod Config từ ModMenu trong Minecraft 1.21.6+:
   - Xử lý an toàn quá trình vẽ nền `renderBackground` bằng try-catch bỏ qua lần blur thứ 2 bị trùng lặp do BlurManager quản lý nghiêm ngặt.
 - **[Sửa lỗi]** Khắc phục lỗi crash `AbstractMethodError: allowKeyPress(Screen, KeyInput)` và `ClassNotFoundException` trên Minecraft 1.21.9+:
   - Cập nhật đúng signature của Fabric Screen API v1 cho các sự kiện bàn phím/chuột (`ScreenKeyboardEvents.AllowKeyPress` với `(Screen, KeyInput)` và `ScreenMouseEvents.AllowMouseClick` với `(Screen, Click)`).
   - Nâng cấp đồng bộ phiên bản Fabric API chính thức cho các subproject `1.21.9` (`0.134.1`), `1.21.10` (`0.138.4`), `1.21.11` (`0.141.3`).
   - Thực hiện clean build toàn diện đảm bảo đóng gói đầy đủ 100% các tệp `.class` vào file JAR đầu ra.
+- **[Sửa lỗi]** Khắc phục lỗi crash `NoClassDefFoundError: net/minecraft/class_437` và `class_310` trên Minecraft 26.1 / 26.2 bằng cách biên dịch trực tiếp với official Mojang jars và Java 25.
 - **[Cập nhật]** Đồng nhất toàn bộ hệ thống Gradle Multi-Project sang **Fabric Loom `1.14-SNAPSHOT`**, giải quyết dứt điểm xung đột Classloader giữa các subproject trong quy trình build.
 - **[Cập nhật]** Đảm bảo nguyên tắc bảo toàn mã nguồn dùng chung: Thư mục `common/` được giữ nguyên 100% ở trạng thái gốc, không bị biến đổi bởi các thay đổi API của những phiên bản đời sau.
-- **[Cập nhật]** Mở rộng task `buildAll` và quy trình phát hành Modrinth để quản lý đồng bộ toàn bộ **18 phiên bản Minecraft** từ `1.19` đến `1.21.11`.
+- **[Cập nhật]** Mở rộng task `buildAll` và quy trình phát hành Modrinth để quản lý đồng bộ toàn bộ **20 phiên bản Minecraft** từ `1.19` đến `26.2`.
 
 ---
 

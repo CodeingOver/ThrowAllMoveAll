@@ -1,13 +1,13 @@
-# ThrowAll & MoveAll Mod (Minecraft 1.19 → 1.21.11)
+# ThrowAll & MoveAll Mod (Minecraft 1.19 → 26.2)
 
-Một Client-side Mod hỗ trợ đa phiên bản Minecraft (từ 1.19 đến 1.21.11), trích xuất 2 tính năng chuyển đổi & vứt vật phẩm tiện lợi nhất từ Item Scroller: **ThrowAll** và **MoveAll**. Hỗ trợ tệp cấu hình JSON ngoài độc lập và phím tắt tổ hợp Combo phức tạp (`Alt + Q`, `Ctrl + Shift + V`...).
+Một Client-side Mod hỗ trợ đa phiên bản Minecraft (từ 1.19 đến 26.2), trích xuất 2 tính năng chuyển đổi & vứt vật phẩm tiện lợi nhất từ Item Scroller: **ThrowAll** và **MoveAll**. Hỗ trợ tệp cấu hình JSON ngoài độc lập và phím tắt tổ hợp Combo phức tạp (`Alt + Q`, `Ctrl + Shift + V`...).
 
 ---
 
 ## 1. Tên dự án & Giới thiệu
 - **Tên dự án:** ThrowAll & MoveAll Mod
-- **Phiên bản Minecraft hỗ trợ:** Tất cả các phiên bản chính từ **Minecraft 1.19 đến 1.21.11** (18 phiên bản chính thức)
-- **Kiến trúc:** Multi-Project Gradle (`common/` + subprojects `versions/1.19` ... `versions/1.21.11`)
+- **Phiên bản Minecraft hỗ trợ:** Tất cả các phiên bản chính từ **Minecraft 1.19 đến 26.2** (20 phiên bản chính thức và mở rộng)
+- **Kiến trúc:** Multi-Project Gradle (`common/` + subprojects `versions/1.19` ... `versions/26.2`)
 - **Mục đích:** Cung cấp giải pháp tối ưu thao tác quản lý kho đồ trong Minecraft thông qua các phím tắt tiện lợi mà không cần cài đặt các thư viện nặng phức tạp.
 
 ---
@@ -24,14 +24,15 @@ Một Client-side Mod hỗ trợ đa phiên bản Minecraft (từ 1.19 đến 1.
 - **MoveAll (Di chuyển toàn bộ vật phẩm cùng loại):**
   - Tự động di chuyển tất cả các stack vật phẩm cùng loại từ rương/container sang kho cá nhân của người chơi (hoặc ngược lại) chỉ với 1 thao tác nhấn phím tổ hợp khi đang mở giao diện GUI.
 - **Hỗ trợ đa phiên bản (Multi-Version Support):**
-  - Hỗ trợ 18 phiên bản Minecraft chính thức: `1.19`, `1.19.2`, `1.19.4`, `1.20`, `1.20.1`, `1.20.2`, `1.20.4`, `1.20.6`, `1.21`, `1.21.1`, `1.21.4`, `1.21.5`, `1.21.6`, `1.21.7`, `1.21.8`, `1.21.9`, `1.21.10`, `1.21.11`.
+  - Hỗ trợ 20 phiên bản Minecraft: `1.19`, `1.19.2`, `1.19.4`, `1.20`, `1.20.1`, `1.20.2`, `1.20.4`, `1.20.6`, `1.21`, `1.21.1`, `1.21.4`, `1.21.5`, `1.21.6`, `1.21.7`, `1.21.8`, `1.21.9`, `1.21.10`, `1.21.11`, `26.1` (gộp 26.1, 26.1.1, 26.1.2), `26.2`.
 
 ---
 
 ## 3. Yêu cầu hệ thống
 - **Java Development Kit (JDK):**
   - **Era 1 (1.19 → 1.20.4):** Java 17.
-  - **Era 2 (1.20.5 → 1.21.5):** Java 21.
+  - **Era 2 (1.20.5 → 1.21.11):** Java 21.
+  - **Era 3 (26.1 → 26.2):** Java 25.
 - **Build Tool:** Gradle 8.x/9.x (kèm Gradle Wrapper `gradlew`).
 - **Minecraft Launcher:** Prism Launcher, Modrinth App, hoặc Official Launcher cài sẵn **Fabric Loader**.
 

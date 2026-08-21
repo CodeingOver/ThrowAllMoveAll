@@ -16,16 +16,16 @@ def versionList = [
     '1.19', '1.19.2', '1.19.4',
     '1.20', '1.20.1', '1.20.2', '1.20.4',
     '1.20.6', '1.21', '1.21.1', '1.21.4', '1.21.5',
-    '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11'
-    // '26.1', '26.2' // Tạm dừng cho đến khi Mojang/Fabric phát hành artifact Maven chính thức
+    '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11',
+    '26.1', '26.2'
 ]
 
-// Exclude unstable 26.1 and 26.2 from Modrinth publication
 def modrinthPublishVersions = [
     '1.19', '1.19.2', '1.19.4',
     '1.20', '1.20.1', '1.20.2', '1.20.4',
     '1.20.6', '1.21', '1.21.1', '1.21.4', '1.21.5',
-    '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11'
+    '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11',
+    '26.1', '26.2'
 ]
 
 def getEnvToken() {
@@ -66,11 +66,11 @@ modrinthPublishVersions.each { ver ->
                 versionNumber = "1.6.0-mc" + project.name
                 versionName = "ThrowAll & MoveAll 1.6.0 (Minecraft " + project.name + ")"
                 versionType = "release"
-                uploadFile = tasks.named('remapJar')
+                uploadFile = tasks.findByName('remapJar') ?: tasks.named('jar')
                 gameVersions = [project.name]
                 loaders = ["fabric"]
-                changelog = """- Added full support for Minecraft 1.21.6 through 1.21.11.
-- Standardized multi-project build toolchain on Fabric Loom 1.14."""
+                changelog = """- Added full support for Minecraft 1.21.6 through 26.2.
+- Standardized multi-project build toolchain."""
             }
         }
     }
@@ -81,7 +81,6 @@ task collectJars {
     description = 'Collects output JAR files from all version subprojects into dist/'
 
     mustRunAfter versionList.collect { ":versions:${it}:build" }
-    mustRunAfter versionList.collect { ":versions:${it}:remapJar" }
 
     doLast {
         versionList.each { ver ->
