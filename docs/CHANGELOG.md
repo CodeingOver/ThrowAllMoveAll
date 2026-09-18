@@ -2,6 +2,38 @@
 
 Tất cả những thay đổi quan trọng của dự án Mod Minecraft **ThrowAll & MoveAll** sẽ được ghi nhận tại tài liệu này.
 
+### [v1.5.3] - 2026-09-18
+
+- **[Sửa lỗi]** Khắc phục lỗi nghiêm trọng khiến chỉ di chuyển (MoveAll) hoặc ném (ThrowAll) được một phần vật phẩm và gây lỗi cả với vật phẩm Vanilla:
+  - **Nguyên nhân gốc rễ:** Do hàm `executeMoveAll` và `executeThrowAll` truyền trực tiếp tham chiếu `focused.getStack()` (trên 26.x là `focused.getItem()`) mà không tạo bản sao độc lập (`.copy()`). Khi vòng lặp quét qua chính ô đang được trỏ chuột và gửi gói tin xử lý, client Minecraft dọn sạch ô đó khiến `targetStack` bị đột biến thành `ItemStack.EMPTY`. Ở các ô tiếp theo, điều kiện `target.isEmpty()` trả về `true`, khiến hàm so khớp `isMatching` trả về `false` cho toàn bộ các ô còn lại trong kho đồ.
+  - **Khắc phục:** Sử dụng `focused.getStack().copy()` (hoặc `focused.getItem().copy()`) để bảo toàn đối tượng mẫu xuyên suốt toàn bộ quá trình duyệt kho đồ, giải quyết dứt điểm hiện tượng chỉ thao tác được một phần stack.
+- **[Cập nhật]** Tinh chỉnh và tối ưu hóa thuật toán nhận diện vật phẩm tùy chỉnh (Custom Items) theo Tên hiển thị (Display Name):
+  - **Nguyên nhân NBT/Component bị lỗi:** Các máy chủ Minecraft vận hành plugin (như Slimefun, MMOItems, Skyblock...) thường tự động gán dữ liệu ngầm ngẫu nhiên (UUID chống trùng lặp, dấu thời gian, số sê-ri) vào NBT hoặc Component của từng stack. Do đó, việc so khớp cứng toàn bộ NBT/Component khiến hai stack cùng là một vật phẩm tùy chỉnh (ví dụ: cùng là đầu người "Cobblestone Tinh Luyện") bị coi là khác nhau.
+  - **Khắc phục:** Chuyển sang cơ chế so khớp chuẩn theo **Loại vật phẩm gốc (`isOf`/`is`) VÀ Tên hiển thị (`getName().getString()` / `getHoverName().getString()`)**:
+    - Đối với vật phẩm tùy chỉnh bằng plugin: Phân biệt chính xác giữa các loại khác nhau (do có tên hiển thị khác nhau), đồng thời gom trọn vẹn mọi stack cùng tên mà không bị cản trở bởi dữ liệu ngầm của máy chủ.
+    - Đối với vật phẩm Vanilla: Gom chính xác các vật phẩm cùng tên, đồng thời phân biệt được các trang bị đã đổi tên qua đe (Anvil).
+    - Đối với sách bùa phép (`Items.ENCHANTED_BOOK`): Giữ nguyên cơ chế so khớp sâu NBT / Components (`canCombine` hoặc `areItemsAndComponentsEqual` hoặc `isSameItemSameComponents`) vì mọi sách phép đều mang tên chung là "Sách bùa phép".
+- **[Cập nhật]** Đồng bộ toàn diện trên toàn bộ 11 tệp `InventoryHelper.java` của 20 phiên bản Minecraft từ `1.19` đến `26.2`.
+- **[Sửa lỗi]** Khắc phục triệt để lỗi không phân biệt vật phẩm tùy chỉnh (Custom Items) trên toàn bộ 20 phiên bản Minecraft:
+  - **Nguyên nhân gốc rễ:** Trước đây mod chỉ so sánh loại vật phẩm gốc (`getItem()`), dẫn đến việc toàn bộ các vật phẩm tùy chỉnh dùng chung loại cơ sở (ví dụ: các loại đầu `minecraft:player_head` trên server MMORPG/Skyblock như "Cobblestone Tinh Luyện", quặng sắt, quặng vàng, chìa khóa minion...) bị coi là cùng loại và bị gom chuyển hoặc ném hàng loạt, gây xáo trộn hoặc mất mát đồ quý giá của người chơi.
+  - **Khắc phục:** Chuyển sang cơ chế so khớp đối tượng `ItemStack` toàn diện thông qua hàm thông minh `isMatching(ItemStack current, ItemStack target)`, phân biệt chuẩn xác theo bùa chú, tên tùy chỉnh, Lore, CustomModelData và dữ liệu cấu thành.
+  - **Khắc phục trên các loại vật phẩm khác:**
+    - Thuốc (`minecraft:potion`): Phân biệt chính xác giữa các loại hiệu ứng (Speed, Healing, Strength...).
+    - Sách bùa phép (`minecraft:enchanted_book`): Phân biệt chính xác từng loại bùa chú (Mending, Sharpness, Fortune...).
+    - Pháo hoa, biểu ngữ (Banner) và các vật phẩm tùy chỉnh server khác.
+- **[Thêm mới]** Cơ chế so khớp thông minh đa thế hệ (Multi-Era Smart Matching Architecture):
+  - **Thế hệ 1 (Minecraft 1.19 → 1.20.4 - Kỷ nguyên NBT):** Tách mã nguồn `common-nbt` dành riêng cho nhóm 1.19 - 1.20.2 và tối ưu `versions/1.20.4`, sử dụng `ItemStack.canCombine` để so khớp loại vật phẩm kết hợp kiểm tra NBT Compound.
+  - **Thế hệ 2 & 3 (Minecraft 1.20.6 → 1.21.11 - Kỷ nguyên Data Components Yarn):** Sử dụng `ItemStack.areItemsAndComponentsEqual` để so sánh trực tiếp hệ thống Component Map của Minecraft hiện đại.
+  - **Thế hệ 4 (Minecraft 26.1 & 26.2 - Kỷ nguyên Mojang Mappings):** Sử dụng `ItemStack.isSameItemSameComponents` tương thích hoàn hảo với mã nguồn Unobfuscated trên nền tảng Java 25.
+- **[Thêm mới]** Thuật toán xử lý độ bền hao mòn thông minh (Smart Durability Handling):
+  - Khi người chơi dọn hòm đồ công cụ/vũ khí thường (ví dụ nhiều cuốc đá bị sứt mẻ độ bền khác nhau), mod tự động bỏ qua chênh lệch hao mòn độ bền (Damage) nếu mọi thuộc tính khác (loại vật phẩm, bùa chú, tên tùy chỉnh) hoàn toàn trùng khớp, giúp dọn dẹp hòm đồ thuận tiện mà vẫn bảo vệ an toàn cho các công cụ có bùa phép hoặc đồ Custom.
+- **[Thêm mới]** Bổ sung trường cấu hình trong `ModConfig`:
+  - `matchComponents` (Mặc định: `true`): Cho phép bật/tắt tính năng phân biệt NBT/Components/Custom Items.
+  - `ignoreDurability` (Mặc định: `true`): Cho phép bật/tắt việc bỏ qua độ bền khi gom công cụ/vũ khí cùng loại.
+- **[Cập nhật]** Đồng bộ nâng cấp số hiệu phiên bản `1.5.3` trên toàn bộ 20 phiên bản và đóng gói thành công vào thư mục `dist/`.
+
+---
+
 ### [v1.5.2] - 2026-08-21
 
 - **[Thêm mới]** Bổ sung hoàn chỉnh các phiên bản Minecraft mới:

@@ -63,8 +63,8 @@ modrinthPublishVersions.each { ver ->
             modrinth {
                 token = getEnvToken()
                 projectId = "throwall-moveall"
-                versionNumber = "1.5.2-mc" + project.name
-                versionName = "ThrowAll & MoveAll 1.5.2 (Minecraft " + project.name + ")"
+                versionNumber = "1.5.3-mc" + project.name
+                versionName = "ThrowAll & MoveAll 1.5.3 (Minecraft " + project.name + ")"
                 versionType = "release"
                 uploadFile = tasks.findByName('remapJar') ?: tasks.named('jar')
                 gameVersions = [project.name]

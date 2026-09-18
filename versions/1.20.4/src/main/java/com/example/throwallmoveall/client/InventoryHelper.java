@@ -73,6 +73,30 @@ public class InventoryHelper {
         return slot;
     }
 
+    // ── Smart Item Matching (NBT Era) ─────────────────────────────────────────
+
+    private static boolean isMatching(ItemStack current, ItemStack target) {
+        if (current == null || target == null || current.isEmpty() || target.isEmpty()) return false;
+        if (!current.isOf(target.getItem())) return false;
+
+        com.example.throwallmoveall.config.ModConfig config = com.example.throwallmoveall.config.ModConfig.get();
+        if (!config.matchComponents) {
+            return true;
+        }
+
+        if (!config.ignoreDurability && current.isDamageable() && target.isDamageable()) {
+            if (current.getDamage() != target.getDamage()) {
+                return false;
+            }
+        }
+
+        if (current.isOf(net.minecraft.item.Items.ENCHANTED_BOOK)) {
+            return ItemStack.canCombine(current, target);
+        }
+
+        return current.getName().getString().equals(target.getName().getString());
+    }
+
     // ── Public entry points ──────────────────────────────────────────────────
 
     /** Move all items of the same type as the hovered slot to the other side. */
@@ -93,7 +117,7 @@ public class InventoryHelper {
 
         executeOnMatchingSlots(
                 screen, player, im,
-                focused.getStack().getItem(),
+                focused.getStack().copy(),
                 /* filterSameSide */ true, srcInPlayer,
                 SlotActionType.QUICK_MOVE, 0);
     }
@@ -110,7 +134,7 @@ public class InventoryHelper {
 
         executeOnMatchingSlots(
                 screen, player, im,
-                focused.getStack().getItem(),
+                focused.getStack().copy(),
                 /* filterSameSide */ false, false,
                 SlotActionType.THROW, 1);
     }
@@ -121,11 +145,13 @@ public class InventoryHelper {
             HandledScreen<?> screen,
             ClientPlayerEntity player,
             ClientPlayerInteractionManager im,
-            Item targetItem,
+            ItemStack targetStack,
             boolean filterSameSide,
             boolean srcInPlayer,
             SlotActionType action,
             int btn) {
+
+        if (targetStack == null || targetStack.isEmpty()) return;
 
         boolean isCreative = screen instanceof CreativeInventoryScreen;
 
@@ -141,14 +167,14 @@ public class InventoryHelper {
                 if (!(slot.inventory instanceof PlayerInventory)) continue;
 
                 ItemStack stack = slot.getStack();
-                if (!stack.isEmpty() && stack.isOf(targetItem)) {
+                if (isMatching(stack, targetStack)) {
                     im.clickSlot(playerHandler.syncId, slot.id, btn, action, player);
                 }
             }
 
             // Sync visual slots on current screen
             for (Slot s : screen.getScreenHandler().slots) {
-                if (s.hasStack() && s.getStack().isOf(targetItem)) {
+                if (s.hasStack() && isMatching(s.getStack(), targetStack)) {
                     Slot real = getRealSlot(s);
                     if (real != null && real.inventory instanceof PlayerInventory) {
                         s.setStack(ItemStack.EMPTY);
@@ -175,7 +201,7 @@ public class InventoryHelper {
             }
 
             ItemStack stack = slot.getStack();
-            if (!stack.isEmpty() && stack.isOf(targetItem)) {
+            if (isMatching(stack, targetStack)) {
                 im.clickSlot(syncId, slot.id, btn, action, player);
             }
         }

@@ -71,6 +71,30 @@ public class InventoryHelper {
         return slot;
     }
 
+    // ── Smart Item Matching (Mojang Mappings: 26.1 - 26.2) ────────────────────
+
+    private static boolean isMatching(ItemStack current, ItemStack target) {
+        if (current == null || target == null || current.isEmpty() || target.isEmpty()) return false;
+        if (!current.is(target.getItem())) return false;
+
+        com.example.throwallmoveall.config.ModConfig config = com.example.throwallmoveall.config.ModConfig.get();
+        if (!config.matchComponents) {
+            return true;
+        }
+
+        if (!config.ignoreDurability && current.isDamageableItem() && target.isDamageableItem()) {
+            if (current.getDamageValue() != target.getDamageValue()) {
+                return false;
+            }
+        }
+
+        if (current.is(net.minecraft.world.item.Items.ENCHANTED_BOOK)) {
+            return ItemStack.isSameItemSameComponents(current, target);
+        }
+
+        return current.getHoverName().getString().equals(target.getHoverName().getString());
+    }
+
     // ── Public entry points ──────────────────────────────────────────────────
 
     /** Move all items of the same type as the hovered slot to the other side. */
@@ -87,11 +111,14 @@ public class InventoryHelper {
         Slot realFocused = isCreative ? getRealSlot(focused) : focused;
         boolean srcInPlayer = realFocused.container instanceof Inventory;
 
+        // In Creative Mode, MoveAll only makes sense for slots in the player's own inventory.
+        // Hovering over a Creative Palette tab slot produces srcInPlayer=false and there is
+        // no "other side" container to QUICK_MOVE into, so exit early.
         if (isCreative && !srcInPlayer) return;
 
         executeOnMatchingSlots(
                 screen, player, im,
-                focused.getItem().getItem(),
+                focused.getItem().copy(),
                 /* filterSameSide */ true, srcInPlayer,
                 ContainerInput.QUICK_MOVE, 0);
     }
@@ -108,7 +135,7 @@ public class InventoryHelper {
 
         executeOnMatchingSlots(
                 screen, player, im,
-                focused.getItem().getItem(),
+                focused.getItem().copy(),
                 /* filterSameSide */ false, false,
                 ContainerInput.THROW, 1);
     }
@@ -119,11 +146,13 @@ public class InventoryHelper {
             AbstractContainerScreen<?> screen,
             LocalPlayer player,
             MultiPlayerGameMode im,
-            Item targetItem,
+            ItemStack targetStack,
             boolean filterSameSide,
             boolean srcInPlayer,
             ContainerInput action,
             int btn) {
+
+        if (targetStack == null || targetStack.isEmpty()) return;
 
         AbstractContainerMenu handler = screen.getMenu();
         boolean isCreative = screen instanceof CreativeModeInventoryScreen;
@@ -150,7 +179,7 @@ public class InventoryHelper {
             }
 
             ItemStack stack = slot.getItem();
-            if (!stack.isEmpty() && stack.is(targetItem)) {
+            if (isMatching(stack, targetStack)) {
                 if (isCreative) {
                     if (action == ContainerInput.THROW) {
                         im.handleCreativeModeItemDrop(stack.copy());

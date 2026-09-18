@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-version = "1.5.2-mc1.19"
+version = "1.5.3-mc1.19"
 group = 'com.example'
 
 base {
@@ -21,10 +21,12 @@ sourceSets {
         java {
             srcDirs = [
                 rootProject.file('common/src/main/java'),
+                rootProject.file('common-nbt/src/main/java'),
                 'src/main/java'
             ]
             exclude { element ->
-                element.file == rootProject.file('common/src/main/java/com/example/throwallmoveall/client/ModConfigScreen.java')
+                element.file == rootProject.file('common/src/main/java/com/example/throwallmoveall/client/ModConfigScreen.java') ||
+                element.file == rootProject.file('common/src/main/java/com/example/throwallmoveall/client/InventoryHelper.java')
             }
         }
         resources {

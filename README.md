@@ -23,6 +23,11 @@ Một Client-side Mod hỗ trợ đa phiên bản Minecraft (từ 1.19 đến 26
   - Khi trỏ chuột vào một ô vật phẩm trong kho đồ/rương (GUI) và nhấn phím tắt tổ hợp, toàn bộ vật phẩm cùng loại ở mọi ô sẽ lập tức được vứt ra ngoài.
 - **MoveAll (Di chuyển toàn bộ vật phẩm cùng loại):**
   - Tự động di chuyển tất cả các stack vật phẩm cùng loại từ rương/container sang kho cá nhân của người chơi (hoặc ngược lại) chỉ với 1 thao tác nhấn phím tổ hợp khi đang mở giao diện GUI.
+- **So khớp vật phẩm thông minh (Smart Item Matching):**
+  - Tự động nhận diện chuẩn xác các vật phẩm tùy chỉnh (Custom Items) của máy chủ plugin (Slimefun, MMOItems, Skyblock head...) thông qua Tên hiển thị (Display Name), khắc phục hoàn toàn hiện tượng không thể gom đồ hoặc bị dữ liệu ngầm UUID của plugin gây nhiễu.
+  - Phân biệt chuẩn xác giữa các loại sách bùa phép (Enchanted Books) theo từng loại bùa chú (NBT/Components).
+  - Thuật toán thông minh tự động bỏ qua độ hao mòn (Damage) của công cụ/vũ khí thường, giúp dọn dẹp hòm đồ thuận tiện mà không gom nhầm đồ bùa phép hoặc đồ Custom.
+  - Bảo vệ đối tượng mẫu bằng kỹ thuật sao chép stack an toàn, chống lỗi đột biến ô dữ liệu khi thao tác dọn dẹp kho đồ.
 - **Hỗ trợ đa phiên bản (Multi-Version Support):**
   - Hỗ trợ 20 phiên bản Minecraft: `1.19`, `1.19.2`, `1.19.4`, `1.20`, `1.20.1`, `1.20.2`, `1.20.4`, `1.20.6`, `1.21`, `1.21.1`, `1.21.4`, `1.21.5`, `1.21.6`, `1.21.7`, `1.21.8`, `1.21.9`, `1.21.10`, `1.21.11`, `26.1` (gộp 26.1, 26.1.1, 26.1.2), `26.2`.
 
@@ -61,7 +66,7 @@ Chạy lệnh duy nhất sau:
 ```bash
 ./gradlew buildAll
 ```
-Tất cả các file `.jar` hoàn chỉnh của 12 phiên bản sẽ được tự động tổng hợp vào thư mục **`dist/`**.
+Tất cả các file `.jar` hoàn chỉnh của 20 phiên bản sẽ được tự động tổng hợp vào thư mục **`dist/`**.
 
 ### 4. Cài đặt vào Minecraft:
 - Copy file `.jar` tương ứng từ `versions/<phiên-bản>/build/libs/` hoặc `dist/` vào thư mục `.minecraft/mods/`.
@@ -72,17 +77,20 @@ Tất cả các file `.jar` hoàn chỉnh của 12 phiên bản sẽ được t�
 
 ```text
 throwallmoveall/
-├── common/                  # Mã nguồn dùng chung không phụ thuộc phiên bản
+├── common/                  # Mã nguồn dùng chung Data Components (1.20.6 → 1.21.5)
 │   ├── src/main/java/       # Core logic (InventoryHelper, KeyHandlers, ModConfig)
 │   └── src/main/resources/  # Assets chung (icons, lang files)
+├── common-nbt/              # Mã nguồn NBT Era (1.19 → 1.20.2)
+│   └── src/main/java/       # InventoryHelper cho NBT Compound
 ├── versions/                # Subprojects riêng cho từng phiên bản Minecraft
-│   ├── 1.19/                # Subproject MC 1.19 (Legacy Screen API)
-│   ├── 1.20.4/              # Subproject MC 1.20.4 (Java 17, DrawContext)
-│   ├── 1.21.4/              # Subproject MC 1.21.4 (Java 21, Fabric Loom 1.10)
-│   └── 1.21.5/              # Subproject MC 1.21.5 (Java 21)
-├── dist/                    # Nơi chứa các file .jar đầu ra của tất cả phiên bản
+│   ├── 1.19/ .. 1.20.2/     # Subprojects NBT Era
+│   ├── 1.20.4/              # Subproject 1.20.4 (Creative drop fix & NBT)
+│   ├── 1.20.6/ .. 1.21.5/   # Subprojects Data Components
+│   ├── 1.21.6/ .. 1.21.11/  # Subprojects Fabric Screen API mới
+│   └── 26.1/ .. 26.2/       # Subprojects Mojang Mappings (Java 25)
+├── dist/                    # Nơi chứa 20 file .jar đầu ra của tất cả phiên bản
 ├── build.gradle             # File cấu hình tổng (Multi-Project Task buildAll & collectJars)
-└── settings.gradle          # Khai báo tất cả 12 subproject `:versions:<ver>`
+└── settings.gradle          # Khai báo tất cả 20 subproject `:versions:<ver>`
 ```
 
 ---
@@ -96,10 +104,12 @@ throwallmoveall/
        "throwAllAlt": true,
        "throwAllCtrl": false,
        "throwAllShift": false,
-       "moveAllKey": 88,
-       "moveAllAlt": false,
-       "moveAllCtrl": true,
-       "moveAllShift": true
+       "moveAllKey": -100,
+       "moveAllAlt": true,
+       "moveAllCtrl": false,
+       "moveAllShift": false,
+       "matchComponents": true,
+       "ignoreDurability": true
      }
      ```
 2. **Tùy chỉnh qua giao diện In-Game Mod Menu:**

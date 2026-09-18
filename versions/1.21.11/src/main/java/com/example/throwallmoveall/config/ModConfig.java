@@ -65,6 +65,9 @@ public class ModConfig {
     public boolean moveAllCtrl   = false;
     public boolean moveAllShift  = false;
 
+    public boolean matchComponents  = true;
+    public boolean ignoreDurability = true;
+
     // ── Singleton (volatile for safe cross-thread publication) ────────────────
     private static volatile ModConfig INSTANCE = new ModConfig();
 

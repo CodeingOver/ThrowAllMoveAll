@@ -1,5 +1,6 @@
 package com.example.throwallmoveall.client;
 
+import com.example.throwallmoveall.config.ModConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -7,7 +8,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.CraftingResultInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -19,8 +19,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 /**
- * Client-side inventory action executor for ThrowAll & MoveAll.
- * Supports both Survival and Creative mode inventories.
+ * Client-side inventory action executor for ThrowAll & MoveAll (NBT Era: 1.19 - 1.20.2).
+ * Supports both Survival and Creative mode inventories with smart NBT matching.
  */
 public class InventoryHelper {
 
@@ -72,13 +72,13 @@ public class InventoryHelper {
         return slot;
     }
 
-    // ── Smart Item Matching (Data Components Era: 1.21.6 - 1.21.11) ────────────
+    // ── Smart Item Matching (NBT Era) ─────────────────────────────────────────
 
     private static boolean isMatching(ItemStack current, ItemStack target) {
         if (current == null || target == null || current.isEmpty() || target.isEmpty()) return false;
         if (!current.isOf(target.getItem())) return false;
 
-        com.example.throwallmoveall.config.ModConfig config = com.example.throwallmoveall.config.ModConfig.get();
+        ModConfig config = ModConfig.get();
         if (!config.matchComponents) {
             return true;
         }
@@ -90,7 +90,7 @@ public class InventoryHelper {
         }
 
         if (current.isOf(net.minecraft.item.Items.ENCHANTED_BOOK)) {
-            return ItemStack.areItemsAndComponentsEqual(current, target);
+            return ItemStack.canCombine(current, target);
         }
 
         return current.getName().getString().equals(target.getName().getString());
@@ -112,9 +112,6 @@ public class InventoryHelper {
         Slot realFocused = isCreative ? getRealSlot(focused) : focused;
         boolean srcInPlayer = realFocused.inventory instanceof PlayerInventory;
 
-        // In Creative Mode, MoveAll only makes sense for slots in the player's own inventory.
-        // Hovering over a Creative Palette tab slot produces srcInPlayer=false and there is
-        // no "other side" container to QUICK_MOVE into, so exit early.
         if (isCreative && !srcInPlayer) return;
 
         executeOnMatchingSlots(
@@ -166,14 +163,10 @@ public class InventoryHelper {
             if (slot.inventory instanceof CraftingResultInventory) continue;
             if (!slot.canTakeItems(player)) continue;
 
-            // Performance: avoid reflection for non-Creative branches.
-            // In Creative Mode, unwrap CreativeSlot only for PlayerInventory slots.
-            // Non-PlayerInventory Creative Palette slots are skipped before reflection is invoked.
             Slot realSlot;
             if (isCreative) {
                 realSlot = getRealSlot(slot);
                 if (realSlot == null) continue;
-                // Skip template palette slots – these are infinite sources that must NOT be clicked.
                 if (!(realSlot.inventory instanceof PlayerInventory)) continue;
             } else {
                 realSlot = slot;
